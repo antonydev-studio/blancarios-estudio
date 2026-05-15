@@ -75,6 +75,26 @@
 
 ---
 
+## Part 1 Status (Completed 2026-05-15)
+
+1. **[2026-05-15] Part 1 restructure COMPLETE — unified fullstack at root**
+   - `controllers/`, `models/`, `middleware/`, `services/`, `utils/`, `scripts/` moved from `backend/src/`
+   - `src/`, `public/`, `index.html`, `vite.config.js`, `eslint.config.js`, `postcss.config.js` moved from `frontend/`
+   - Single `package.json` + `pnpm-lock.yaml` at root
+   - `pnpm build` passes (84 modules, no errors)
+   - Remaining: `backend/src/index.js` + `backend/src/routes/` intentionally kept as reference for Part 2
+
+2. **[2026-05-15] Mongoose model guard NOT yet added to models/ — add in Part 2**
+   Do instead: all `models/*.js` use bare `mongoose.model("X", schema)` — must change to `mongoose.models.X || mongoose.model("X", schema)` before Vercel Functions are live.
+
+3. **[2026-05-15] vercel.json still has Railway proxy — update in Part 2**
+   Do instead: keep Railway rewrite until Vercel Functions created; then replace with `{ "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }] }`.
+
+4. **[2026-05-15] vite.config.js proxy removed — use `pnpm vercel dev` for local API**
+   Do instead: `pnpm vercel dev` serves frontend + functions on port 3000 — no proxy needed.
+
+---
+
 ## User Directives
 
 1. **[2026-05-15] pnpm is non-negotiable — enforce in every response**
