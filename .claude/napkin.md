@@ -150,6 +150,18 @@
 6. **[2026-05-15] `page.getByDisplayValue()` doesn't exist in Playwright**
    Do instead: use `await expect(locator).toHaveValue("...")` to assert input values in Playwright tests.
 
+7. **[2026-05-15] `test.fail()` marks test as "expected to fail" — not "abort"**
+   Do instead: use `test.skip(true, reason)` to skip a test mid-body when a prerequisite fails. `test.fail()` means Playwright expects the test to fail, not that you want to exit.
+
+8. **[2026-05-15] Production Resend accepts @example.invalid sends (no 500) — creates unverified user**
+   Do instead: duplicate-registration tests will succeed (201) and create orphaned unverified users — run `pnpm test:cleanup` with MONGO_URI after validation runs.
+
+9. **[2026-05-15] Mutation tests — booking-mutation, business-logic (WRITES) create real prod data**
+   Do instead: run `pnpm test:e2e:smoke` (safe) vs `pnpm test:e2e:validate` (mutations). Always `pnpm test:cleanup` after validate run. Test data labeled "TEST QA FINAL".
+
+10. **[2026-05-15] admin-panel.spec.ts env-gated — set TEST_ADMIN_EMAIL + TEST_ADMIN_PASSWORD**
+    Do instead: `TEST_ADMIN_EMAIL=x TEST_ADMIN_PASSWORD=y pnpm playwright test tests/validation/admin-panel.spec.ts` — without vars all admin tests skip (not fail).
+
 ---
 
 ## User Directives
