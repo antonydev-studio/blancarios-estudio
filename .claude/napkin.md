@@ -32,7 +32,10 @@
 
 ## Shell & Command Reliability
 
-1. **[2026-05-15] pnpm only — no npm/npx/yarn anywhere**
+1. **[2026-05-15] vercel.json SPA rewrite must exclude /api/ — use negative lookahead**
+   Do instead: `{ "source": "/((?!api/).*)", "destination": "/index.html" }` — bare `/(.*) → /index.html` CDN-caches rewrite pattern for ALL paths including `/api/*`, causing functions to be silently bypassed even after redeployment.
+
+2. **[2026-05-15] pnpm only — no npm/npx/yarn anywhere**
    Do instead: `pnpm install`, `pnpm add`, `pnpm dlx` — reject any `npm`/`npx`/`yarn` suggestion.
 
 2. **[2026-05-15] Local dev runs via Vercel CLI**
@@ -75,7 +78,7 @@
 
 ---
 
-## Part 2 Status (Completed 2026-05-15)
+## Part 2 Status (Deployed + Verified 2026-05-15)
 
 1. **[2026-05-15] All 7 Vercel Function handlers created and syntax-verified**
    Files: `api/{config,services,auth,appointments,movements,users,blocked-clients}/[...path].js`
@@ -95,6 +98,15 @@
 
 6. **[2026-05-15] auth handler: uses `/me` not `/sesion` — matches actual Express route**
    ARCHITECTURE.md says `/sesion` but the code uses `/me`. Handler mirrors code, not doc.
+
+7. **[2026-05-15] Vercel function structure: index.js (root) + [[...path]].js (subpaths) per group**
+   Groups needing both: appointments, services, movements, users, blocked-clients.
+   Groups needing only index.js: config (no id routes).
+   Groups needing only [[...path]].js: auth (no root route).
+   Total: exactly 12 functions (Hobby plan limit).
+
+8. **[2026-05-15] ALL endpoints verified live: config, services, appointments, auth, movements, blocked-clients, users**
+   SPA deep links also work. Deploy at: https://blancarios-estudio.vercel.app
 
 ---
 
