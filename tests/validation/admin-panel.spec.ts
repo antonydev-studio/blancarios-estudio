@@ -94,8 +94,9 @@ test.describe("Admin Read Endpoints", () => {
     });
     expect(res.status()).toBe(200);
     const j = await res.json();
-    expect(j).toHaveProperty("blockedClients");
-    expect(Array.isArray(j.blockedClients)).toBe(true);
+    // blocked-clients handler uses { ok: true, data: [...] } (diverges from api-standards.md)
+    expect(j).toHaveProperty("data");
+    expect(Array.isArray(j.data)).toBe(true);
   });
 
   test("GET /api/config — config contains expected keys", async ({ request }) => {

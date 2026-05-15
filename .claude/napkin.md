@@ -162,6 +162,9 @@
 10. **[2026-05-15] admin-panel.spec.ts env-gated — set TEST_ADMIN_EMAIL + TEST_ADMIN_PASSWORD**
     Do instead: `TEST_ADMIN_EMAIL=x TEST_ADMIN_PASSWORD=y pnpm playwright test tests/validation/admin-panel.spec.ts` — without vars all admin tests skip (not fail).
 
+11. **[2026-05-15] blocked-clients endpoint returns `{ ok: true, data: [...] }` — NOT `{ blockedClients }`**
+    Do instead: when asserting blocked-clients response, use `j.data` not `j.blockedClients` — this controller deviates from api-standards.md convention.
+
 ---
 
 ## User Directives
