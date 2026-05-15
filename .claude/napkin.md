@@ -130,6 +130,28 @@
 
 ---
 
+## Playwright E2E Tests
+
+1. **[2026-05-15] Playwright configured at root — target production URL**
+   Do instead: `pnpm playwright test` hits `https://blancarios-estudio.vercel.app` — no local server needed. Config at `playwright.config.ts`, tests at `tests/smoke/` and `tests/e2e/`.
+
+2. **[2026-05-15] Mobile nav hidden — desktop-only tests need viewport guard**
+   Do instead: `test.skip(width < 768, "hidden md:flex")` for any test using "Servicios" navbar button — it doesn't render on mobile viewports.
+
+3. **[2026-05-15] WebKit (mobile-safari) requires system libs on Arch Linux**
+   Do instead: keep `mobile-safari` project commented out in config — needs `libicu74 libxml2 libwoff1 libflite1 libmanette-0.2-0` installed first.
+
+4. **[2026-05-15] ServicePickerSection renders twice (mobile md:hidden + desktop hidden md:block)**
+   Do instead: use viewport-aware `.first()` (mobile) vs `.last()` (desktop) for "Presiona para ver los disponibles" text. getByRole("heading") with .first() is safe since headings are accessible-only.
+
+5. **[2026-05-15] Production rate limiting returns 429 for repeated login attempts**
+   Do instead: always `expect([401, 429]).toContain(response.status())` for auth login tests — 429 is valid production behavior, not a test bug. Guard the json assertions inside `if (response.status() === 401)`.
+
+6. **[2026-05-15] `page.getByDisplayValue()` doesn't exist in Playwright**
+   Do instead: use `await expect(locator).toHaveValue("...")` to assert input values in Playwright tests.
+
+---
+
 ## User Directives
 
 1. **[2026-05-15] pnpm is non-negotiable — enforce in every response**

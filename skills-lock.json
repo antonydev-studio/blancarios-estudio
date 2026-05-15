@@ -7,6 +7,12 @@
       "skillPath": "skills/mongoose-mongodb/SKILL.md",
       "computedHash": "620c2050ddb4451b5032a7a7120c44282f4ac91af229df92f9ce4cc0452c1ac5"
     },
+    "playwright-cli": {
+      "source": "microsoft/playwright-cli",
+      "sourceType": "github",
+      "skillPath": "skills/playwright-cli/SKILL.md",
+      "computedHash": "84495cfda62b6c012afc4cc34a0c35bfc7923ba35983b8c04ce4cace0f35a5d8"
+    },
     "vercel-functions": {
       "source": "vercel/vercel-plugin",
       "sourceType": "github",
