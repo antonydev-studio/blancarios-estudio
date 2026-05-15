@@ -49,4 +49,4 @@ const configSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.model("Config", configSchema);
+export default mongoose.models.Config || mongoose.model("Config", configSchema);

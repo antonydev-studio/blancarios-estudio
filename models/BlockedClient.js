@@ -10,4 +10,4 @@ const blockedClientSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.model("BlockedClient", blockedClientSchema);
+export default mongoose.models.BlockedClient || mongoose.model("BlockedClient", blockedClientSchema);

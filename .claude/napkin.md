@@ -75,6 +75,29 @@
 
 ---
 
+## Part 2 Status (Completed 2026-05-15)
+
+1. **[2026-05-15] All 7 Vercel Function handlers created and syntax-verified**
+   Files: `api/{config,services,auth,appointments,movements,users,blocked-clients}/[...path].js`
+   Pattern: `await connectDB()` → URL parse → `req.query` + `req.params` attach → route by method+path → 405 fallback.
+
+2. **[2026-05-15] vercel.json updated — Railway proxy removed**
+   Now: `{ "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }] }` — Vercel auto-detects `api/` as Functions.
+
+3. **[2026-05-15] All 6 models have mongoose.models guard**
+   e.g. `mongoose.models.Appointment || mongoose.model("Appointment", citaSchema)` — prevents "Cannot overwrite model" on warm invocations.
+
+4. **[2026-05-15] lib/mongoose.js created — cached connection pattern**
+   `global.mongoose` cache, `bufferCommands: false`, never call `mongoose.connect()` elsewhere.
+
+5. **[2026-05-15] appointments handler: `/occupied` and `/mias` and `/auto-finalizar` routed BEFORE `/:id`**
+   `/mias/:id` uses `miasId` separate from single-segment `id` to avoid collision.
+
+6. **[2026-05-15] auth handler: uses `/me` not `/sesion` — matches actual Express route**
+   ARCHITECTURE.md says `/sesion` but the code uses `/me`. Handler mirrors code, not doc.
+
+---
+
 ## Part 1 Status (Completed 2026-05-15)
 
 1. **[2026-05-15] Part 1 restructure COMPLETE — unified fullstack at root**

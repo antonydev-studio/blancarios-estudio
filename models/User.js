@@ -23,4 +23,4 @@ usuarioSchema.methods.toJSON = function () {
   return obj;
 };
 
-export default mongoose.model("User", usuarioSchema);
+export default mongoose.models.User || mongoose.model("User", usuarioSchema);

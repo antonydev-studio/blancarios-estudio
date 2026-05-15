@@ -35,4 +35,4 @@ citaSchema.index(
   }
 );
 
-export default mongoose.model("Appointment", citaSchema);
+export default mongoose.models.Appointment || mongoose.model("Appointment", citaSchema);

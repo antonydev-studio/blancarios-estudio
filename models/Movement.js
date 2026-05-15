@@ -15,4 +15,4 @@ const movementSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.model("Movement", movementSchema);
+export default mongoose.models.Movement || mongoose.model("Movement", movementSchema);
