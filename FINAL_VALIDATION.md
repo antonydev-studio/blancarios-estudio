@@ -258,6 +258,6 @@ TEST_ADMIN_EMAIL=admin@blancarios.com \
 # Step 4: Cleanup test data
 MONGO_URI=mongodb+srv://... node scripts/cleanup-test-data.js
 
-# Step 5: View report
+# Step 5: View report#
 pnpm playwright show-report
 ```
