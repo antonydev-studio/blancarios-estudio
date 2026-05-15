@@ -5,7 +5,12 @@ import Movement    from "../models/Movement.js";
 import Config      from "../models/Config.js";
 import BlockedClient      from "../models/BlockedClient.js";
 import { normalizePhone } from "../utils/normalizePhone.js";
-import { enviarNotificacionAdmin, enviarNotificacionCancelacion, enviarNotificacionReagendamiento } from "../services/emailService.js";
+import { getMexicoToday } from "../utils/mexicoTime.js";
+import {
+  enviarNotificacionAdmin,
+  enviarNotificacionCancelacion,
+  enviarNotificacionReagendamiento,
+} from "../services/emailService.js";
 
 // ── Helpers de movimientos automáticos ───────────────────────────────────────
 async function crearMovimientoCita(appointment) {
@@ -26,44 +31,106 @@ async function eliminarMovimientoCita(citaId) {
   await Movement.deleteOne({ citaId });
 }
 
+// ── Helper: "HH:MM AM/PM" → minutos desde medianoche ─────────────────────────
+function horaAMinutos(hora) {
+  const [time, period] = hora.trim().split(" ");
+  const [h, m] = time.split(":").map(Number);
+  let h24 = h;
+  if (period === "PM" && h !== 12) h24 += 12;
+  if (period === "AM" && h === 12) h24 = 0;
+  return h24 * 60 + m;
+}
+
+// ── Helper: horario del día {inicioMin, finMin} o null si cerrado/bloqueado ──
+// Orden de prioridad:
+//   1. diasBloqueados (fechas explícitas bloqueadas) → null
+//   2. diasAbiertosExcepcion (fechas explícitas abiertas) → usar horario del día
+//   3. horarioPorDia[dayOfWeek].cerrado → null
+//   4. horarioPorDia[dayOfWeek] → horario normal
+function horarioDelDia(cfg, fechaStr) {
+  if (cfg?.diasBloqueados?.includes(fechaStr)) return null;
+
+  const dia = new Date(fechaStr + "T12:00:00").getDay();
+  const horario = cfg?.horarioPorDia?.[String(dia)];
+  const esExcepcionAbierta = cfg?.diasAbiertosExcepcion?.includes(fechaStr);
+
+  if (!esExcepcionAbierta && (!horario || horario.cerrado)) return null;
+
+  const h = horario ?? {};
+  return {
+    inicioMin: (h.inicio ?? 9) * 60,
+    finMin:    (h.fin   ?? 21) * 60,
+  };
+}
+
+// ── Helper: chequeo de solapamiento con buffer de descanso ───────────────────
+// Cada cita "ocupa" [start, end + buffer). Dos citas conflictan si sus rangos
+// se intersectan. buffer=0 reproduce el comportamiento original sin descanso.
+function hayConflicto(citasDelDia, nuevaInicio, nuevaFin, bufferMin, excluirId = null) {
+  return citasDelDia.some((c) => {
+    if (excluirId && String(c._id) === String(excluirId)) return false;
+    const existInicio = horaAMinutos(c.hora);
+    const existFin    = existInicio + (c.duracion || 0);
+    return nuevaInicio < (existFin + bufferMin) && existInicio < (nuevaFin + bufferMin);
+  });
+}
+
+// ── Helper: parsear "10:00 AM" + "2025-04-21" → Date en UTC ──────────────────
+// México City es UTC-6 permanente desde 2023 (sin horario de verano).
+const OFFSET_MEXICO_MS = 6 * 60 * 60 * 1000;
+function parsearCitaDateTime(fecha, hora) {
+  const partes = hora.trim().split(" ");
+  const period = partes[1];
+  const [h, m] = partes[0].split(":").map(Number);
+  let h24 = h;
+  if (period === "PM" && h !== 12) h24 += 12;
+  if (period === "AM" && h === 12) h24 = 0;
+  const [year, month, day] = fecha.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day, h24, m) + OFFSET_MEXICO_MS);
+}
+
 // ── POST /api/appointments — público, cualquiera puede agendar ────────────────
 export async function createAppointment(req, res) {
   try {
     const {
       fecha, hora, servicios, duracion, precio, clienteCorreo, userId,
     } = req.body;
-    const clienteNombre    = req.body.clienteNombre?.trim();
-    const clienteTelefono  = req.body.clienteTelefono?.trim();
+    const clienteNombre   = req.body.clienteNombre?.trim();
+    const clienteTelefono = req.body.clienteTelefono?.trim();
 
     if (!fecha || !hora || !servicios?.length || !clienteNombre || !clienteTelefono || !duracion) {
       return res.status(400).json({ mensaje: "Faltan campos requeridos." });
     }
-    if (!Number.isInteger(duracion) || duracion <= 0) {
+    if (!Number.isInteger(duracion) || duracion < 1) {
       return res.status(400).json({ mensaje: "La duración debe ser un número entero positivo." });
     }
 
-    // Verificar que el nuevo slot no se empalme con ninguna cita existente
-    const citasDelDia = await Appointment.find({
-      fecha,
-      estado: { $nin: ["cancelada"] },
-    }).select("hora duracion");
-    const nuevaInicio = horaAMinutos(hora);
-    const nuevaFin    = nuevaInicio + (duracion || 0);
-    const conflicto   = citasDelDia.some((c) => {
-      const existInicio = horaAMinutos(c.hora);
-      const existFin    = existInicio + (c.duracion || 0);
-      return nuevaInicio < existFin && existInicio < nuevaFin;
-    });
-    if (conflicto) {
-      return res.status(409).json({ mensaje: "Este horario ya no está disponible." });
+    // Prevenir citas en fechas pasadas (usando hora local de México, no UTC)
+    if (fecha < getMexicoToday()) {
+      return res.status(400).json({ mensaje: "No se pueden agendar citas en fechas pasadas." });
     }
 
-    // Verificar que la cita esté dentro del horario de operación
-    const cfg = await Config.findOne({ clave: "global" }).lean();
+    // Obtener config y citas del día en paralelo para minimizar latencia
+    const [cfg, citasDelDia] = await Promise.all([
+      Config.findOne({ clave: "global" }).lean(),
+      Appointment.find({ fecha, estado: { $nin: ["cancelada"] } }).select("hora duracion"),
+    ]);
+
+    // Verificar disponibilidad del día (bloqueado, excepción abierta, día cerrado)
     const horario = horarioDelDia(cfg, fecha);
     if (!horario) {
       return res.status(400).json({ mensaje: "El negocio está cerrado ese día." });
     }
+
+    // Verificar hora específica no bloqueada por el admin
+    const horasBloqueadas = cfg?.horasBloqueadasPorDia?.[fecha] ?? [];
+    if (horasBloqueadas.includes(hora)) {
+      return res.status(400).json({ mensaje: "Este horario no está disponible." });
+    }
+
+    // Verificar dentro del horario de operación
+    const nuevaInicio = horaAMinutos(hora);
+    const nuevaFin    = nuevaInicio + duracion;
     if (nuevaInicio < horario.inicioMin) {
       return res.status(400).json({ mensaje: "La cita es antes del horario de apertura." });
     }
@@ -71,7 +138,13 @@ export async function createAppointment(req, res) {
       return res.status(400).json({ mensaje: "La cita excede el horario de cierre." });
     }
 
-    // Verificar lista negra si el usuario está registrado
+    // Verificar solapamiento incluyendo buffer de descanso entre citas
+    const bufferMin = cfg?.bufferMinutos ?? 0;
+    if (hayConflicto(citasDelDia, nuevaInicio, nuevaFin, bufferMin)) {
+      return res.status(409).json({ mensaje: "Este horario ya no está disponible." });
+    }
+
+    // Verificar lista negra del usuario registrado
     if (userId) {
       const usuario = await User.findById(userId);
       if (usuario?.listaNegraActiva) {
@@ -81,7 +154,7 @@ export async function createAppointment(req, res) {
       }
     }
 
-    // Verificar lista negra por teléfono (aplica a registrados y visitantes)
+    // Verificar lista negra por teléfono (aplica también a visitantes sin cuenta)
     const telefonoNormalizado = normalizePhone(clienteTelefono);
     const clienteBloqueado = await BlockedClient.findOne({
       telefono: telefonoNormalizado,
@@ -105,9 +178,12 @@ export async function createAppointment(req, res) {
       userId:        userId ?? null,
     });
 
-    // Auto-vincular al usuario si la cita se creó sin userId pero existe cuenta con ese teléfono
+    // Auto-vincular al usuario si existe cuenta con ese teléfono
+    // Busca en ambas formas (raw y normalizado) para cubrir inconsistencias de formato
     if (!appointment.userId) {
-      const usuarioExistente = await User.findOne({ telefono: clienteTelefono });
+      const usuarioExistente = await User.findOne({
+        telefono: { $in: [clienteTelefono, telefonoNormalizado] },
+      });
       if (usuarioExistente) {
         appointment.userId = usuarioExistente._id;
         await appointment.save();
@@ -134,7 +210,7 @@ export async function getMisAppointments(req, res) {
       userId: new mongoose.Types.ObjectId(req.usuario.id),
     }).sort({ fecha: -1, hora: -1 });
     res.json({ appointments });
-  } catch (err) {
+  } catch {
     res.status(500).json({ mensaje: "Error al obtener citas." });
   }
 }
@@ -155,7 +231,7 @@ export async function getOccupiedSlots(req, res) {
       horasOcupadas,
       citas: citas.map((c) => ({ hora: c.hora, duracion: c.duracion ?? 0 })),
     });
-  } catch (err) {
+  } catch {
     res.status(500).json({ mensaje: "Error al obtener horas ocupadas." });
   }
 }
@@ -179,7 +255,7 @@ export async function getAllAppointments(req, res) {
       return cita;
     });
     res.json({ appointments });
-  } catch (err) {
+  } catch {
     res.status(500).json({ mensaje: "Error al obtener citas." });
   }
 }
@@ -187,6 +263,10 @@ export async function getAllAppointments(req, res) {
 // ── PATCH /api/appointments/:id — solo admin ─────────────────────────────────
 export async function updateAppointment(req, res) {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ mensaje: "ID de cita inválido." });
+    }
+
     const anterior = await Appointment.findById(req.params.id).lean();
     if (!anterior) {
       return res.status(404).json({ mensaje: "Cita no encontrada." });
@@ -195,7 +275,7 @@ export async function updateAppointment(req, res) {
     const appointment = await Appointment.findByIdAndUpdate(
       req.params.id,
       req.body,
-      { returnDocument: 'after', runValidators: true }
+      { returnDocument: "after", runValidators: true }
     );
 
     const nuevoEstado = req.body.estado;
@@ -217,51 +297,13 @@ export async function updateAppointment(req, res) {
   }
 }
 
-// ── Helper: "HH:MM AM/PM" → minutos desde medianoche ─────────────────────────
-function horaAMinutos(hora) {
-  const [time, period] = hora.trim().split(" ");
-  const [h, m] = time.split(":").map(Number);
-  let h24 = h;
-  if (period === "PM" && h !== 12) h24 += 12;
-  if (period === "AM" && h === 12) h24 = 0;
-  return h24 * 60 + m;
-}
-
-// ── Helper: horario del día en minutos {inicioMin, finMin} (null si cerrado) ──
-function horarioDelDia(cfg, fechaStr) {
-  const dia = new Date(fechaStr + "T12:00:00").getDay(); // evita problemas de zona horaria
-  const horario = cfg?.horarioPorDia?.[String(dia)];
-  if (!horario || horario.cerrado) return null;
-  return {
-    inicioMin: (horario.inicio ?? 9) * 60,
-    finMin:    (horario.fin   ?? 21) * 60,
-  };
-}
-
-// ── Helper: parsear "10:00 AM" + "2025-04-21" → Date (UTC) ───────────────────
-// México City es UTC-6 permanente desde 2023 (sin horario de verano).
-// Railway corre en UTC, por lo que new Date(year, month, day, h, m) crearía
-// la fecha en UTC, no en hora local de México — se adelanta 6 horas el umbral.
-// Se usa Date.UTC + offset explícito para producir el timestamp UTC correcto.
-// México City es UTC-6 permanente (sin horario de verano desde 2023).
-// Date.UTC trata los valores como UTC puro, pero hora+fecha son hora local México.
-// Para convertir a UTC real: sumar 6 h (México va 6 h detrás de UTC).
-// Ej: 3:00 PM México → Date.UTC da 15:00Z → +6h = 21:00Z ✓
-const OFFSET_MEXICO_MS = 6 * 60 * 60 * 1000;
-function parsearCitaDateTime(fecha, hora) {
-  const partes = hora.trim().split(" ");
-  const period = partes[1]; // "AM" | "PM"
-  const [h, m] = partes[0].split(":").map(Number);
-  let h24 = h;
-  if (period === "PM" && h !== 12) h24 += 12;
-  if (period === "AM" && h === 12) h24 = 0;
-  const [year, month, day] = fecha.split("-").map(Number);
-  return new Date(Date.UTC(year, month - 1, day, h24, m) + OFFSET_MEXICO_MS);
-}
-
 // ── PATCH /api/appointments/mias/:id — cliente autenticado ───────────────────
 export async function patchClienteAppointment(req, res) {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ mensaje: "ID de cita inválido." });
+    }
+
     const cita = await Appointment.findOne({
       _id: req.params.id,
       userId: req.usuario.id,
@@ -303,41 +345,61 @@ export async function patchClienteAppointment(req, res) {
           mensaje: "Esta cita ya fue reagendada una vez. Solo puedes cancelarla.",
         });
       }
-      const diffHoras = (parsearCitaDateTime(fecha, hora) - new Date()) / 3_600_000;
-      if (diffHoras < 3) {
+
+      // La cita ACTUAL debe tener al menos 3h restantes para permitir reagendado
+      const diffHorasActual = (parsearCitaDateTime(cita.fecha, cita.hora) - new Date()) / 3_600_000;
+      if (diffHorasActual < 3) {
+        return res.status(400).json({
+          mensaje: "Ya no puedes reagendar esta cita, está muy próxima. Contacta directamente a Blanca Ríos Estudio.",
+        });
+      }
+
+      // La nueva fecha no puede ser pasada
+      if (fecha < getMexicoToday()) {
+        return res.status(400).json({ mensaje: "No se pueden reagendar citas en fechas pasadas." });
+      }
+
+      // La nueva cita también debe estar al menos a 3h
+      const diffHorasNueva = (parsearCitaDateTime(fecha, hora) - new Date()) / 3_600_000;
+      if (diffHorasNueva < 3) {
         return res.status(400).json({
           mensaje: "Solo puedes agendar citas con al menos 3 horas de anticipación.",
         });
       }
-      const citasDelDia = await Appointment.find({
-        _id: { $ne: cita._id },
-        fecha,
-        estado: { $nin: ["cancelada"] },
-      }).select("hora duracion");
-      const nuevaInicio = horaAMinutos(hora);
-      const nuevaFin    = nuevaInicio + (cita.duracion || 0);
-      const conflicto   = citasDelDia.some((c) => {
-        const existInicio = horaAMinutos(c.hora);
-        const existFin    = existInicio + (c.duracion || 0);
-        return nuevaInicio < existFin && existInicio < nuevaFin;
-      });
-      if (conflicto) {
-        return res.status(409).json({ mensaje: "Ese horario ya está ocupado. Elige otro." });
-      }
+
+      // Obtener config para horario, horas bloqueadas y buffer
       const cfgReag = await Config.findOne({ clave: "global" }).lean();
       const horReag = horarioDelDia(cfgReag, fecha);
       if (!horReag) {
         return res.status(400).json({ mensaje: "El negocio está cerrado ese día." });
       }
-      const reagNuevaFin = nuevaInicio + (cita.duracion || 0);
+
+      const horasBloqueadasReag = cfgReag?.horasBloqueadasPorDia?.[fecha] ?? [];
+      if (horasBloqueadasReag.includes(hora)) {
+        return res.status(400).json({ mensaje: "Este horario no está disponible." });
+      }
+
+      const nuevaInicio = horaAMinutos(hora);
+      const nuevaFin    = nuevaInicio + (cita.duracion || 0);
       if (nuevaInicio < horReag.inicioMin) {
         return res.status(400).json({ mensaje: "La cita es antes del horario de apertura." });
       }
-      if (reagNuevaFin > horReag.finMin) {
+      if (nuevaFin > horReag.finMin) {
         return res.status(400).json({ mensaje: "La cita excede el horario de cierre." });
       }
-      cita.fecha     = fecha;
-      cita.hora      = hora;
+
+      const bufferMinReag = cfgReag?.bufferMinutos ?? 0;
+      const citasDelDia = await Appointment.find({
+        fecha,
+        estado: { $nin: ["cancelada"] },
+      }).select("hora duracion _id");
+
+      if (hayConflicto(citasDelDia, nuevaInicio, nuevaFin, bufferMinReag, cita._id)) {
+        return res.status(409).json({ mensaje: "Ese horario ya está ocupado. Elige otro." });
+      }
+
+      cita.fecha      = fecha;
+      cita.hora       = hora;
       cita.reagendada = true;
       await cita.save();
       enviarNotificacionReagendamiento(cita).catch((err) =>
@@ -356,6 +418,9 @@ export async function patchClienteAppointment(req, res) {
 // ── DELETE /api/appointments/:id — solo admin ─────────────────────────────────
 export async function deleteAppointment(req, res) {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ mensaje: "ID de cita inválido." });
+    }
     await eliminarMovimientoCita(req.params.id).catch((err) =>
       console.error("Error eliminando movimiento automático:", err.message)
     );
@@ -364,7 +429,7 @@ export async function deleteAppointment(req, res) {
       return res.status(404).json({ mensaje: "Cita no encontrada." });
     }
     res.json({ mensaje: "Cita eliminada correctamente." });
-  } catch (err) {
+  } catch {
     res.status(500).json({ mensaje: "Error al eliminar cita." });
   }
 }

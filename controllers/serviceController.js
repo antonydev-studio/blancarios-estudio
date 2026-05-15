@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Service from "../models/Service.js";
 
 // ── GET /api/services — público, cualquiera puede ver el catálogo ─────────────
@@ -27,6 +28,9 @@ export async function createService(req, res) {
 // ── PATCH /api/services/:id — solo admin ─────────────────────────────────────
 export async function updateService(req, res) {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ mensaje: "ID de servicio inválido." });
+    }
     const service = await Service.findByIdAndUpdate(
       req.params.id,
       req.body,
@@ -42,6 +46,9 @@ export async function updateService(req, res) {
 // ── DELETE /api/services/:id — solo admin ────────────────────────────────────
 export async function deleteService(req, res) {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ mensaje: "ID de servicio inválido." });
+    }
     const service = await Service.findByIdAndDelete(req.params.id);
     if (!service) return res.status(404).json({ mensaje: "Servicio no encontrado." });
     res.json({ mensaje: "Servicio eliminado correctamente." });

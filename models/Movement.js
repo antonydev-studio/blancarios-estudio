@@ -15,4 +15,6 @@ const movementSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+movementSchema.index({ citaId: 1 });
+
 export default mongoose.models.Movement || mongoose.model("Movement", movementSchema);

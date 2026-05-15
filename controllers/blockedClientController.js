@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import BlockedClient      from "../models/BlockedClient.js";
 import { normalizePhone } from "../utils/normalizePhone.js";
 
@@ -33,6 +34,9 @@ export async function createBlockedClient(req, res) {
 
 export async function toggleBlockedClient(req, res) {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ mensaje: "ID inválido." });
+    }
     const blocked = await BlockedClient.findById(req.params.id);
     if (!blocked) {
       return res.status(404).json({ mensaje: "Cliente bloqueado no encontrado." });
@@ -47,6 +51,9 @@ export async function toggleBlockedClient(req, res) {
 
 export async function deleteBlockedClient(req, res) {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ mensaje: "ID inválido." });
+    }
     const blocked = await BlockedClient.findByIdAndDelete(req.params.id);
     if (!blocked) {
       return res.status(404).json({ mensaje: "Cliente bloqueado no encontrado." });

@@ -136,6 +136,7 @@ export async function reenviarCodigo(req, res) {
     } catch (emailErr) {
       console.error("Error reenviando correo:", emailErr);
       console.log(`[DEV] Código reenviado para ${correo}: ${codigo}`);
+      return res.status(500).json({ mensaje: "No se pudo enviar el código. Intenta de nuevo." });
     }
 
     res.json({ mensaje: "Código reenviado" });

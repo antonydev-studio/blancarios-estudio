@@ -5,8 +5,8 @@ const citaSchema = new mongoose.Schema(
     fecha:    { type: String, required: true }, // "2024-07-15" — ISO yyyy-mm-dd
     hora:     { type: String, required: true }, // "10:00 AM"
     servicios:{ type: [String], required: true },
-    duracion: { type: Number, required: true },
-    precio:   { type: Number, required: true },
+    duracion: { type: Number, required: true, min: 1 },
+    precio:   { type: Number, required: true, min: 0 },
     estado:   {
       type: String,
       enum: ["pendiente", "confirmada", "finalizada", "cancelada"],
@@ -34,5 +34,6 @@ citaSchema.index(
     name: "unique_fecha_hora_no_cancelada",
   }
 );
+citaSchema.index({ userId: 1 });
 
 export default mongoose.models.Appointment || mongoose.model("Appointment", citaSchema);

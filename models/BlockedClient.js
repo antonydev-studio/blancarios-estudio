@@ -10,4 +10,6 @@ const blockedClientSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+blockedClientSchema.index({ activo: 1 });
+
 export default mongoose.models.BlockedClient || mongoose.model("BlockedClient", blockedClientSchema);

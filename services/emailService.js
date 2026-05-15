@@ -2,6 +2,17 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+// Prevent XSS in email HTML — user-supplied strings go through this before
+// being interpolated into template literals.
+function esc(s) {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;");
+}
+
 // Dirección "from" — debe usar un dominio verificado en Resend.
 // Si no tienes dominio propio, usa "onboarding@resend.dev" solo para pruebas
 // (Resend solo envía a tu propio correo en modo sandbox).
@@ -15,12 +26,12 @@ export async function enviarCodigoVerificacion(correo, nombre, codigo) {
     html: `
       <div style="font-family:sans-serif;max-width:480px;margin:auto">
         <h2 style="color:#c9a96e">Blanca Ríos Estudio</h2>
-        <p>Hola <strong>${nombre}</strong>,</p>
+        <p>Hola <strong>${esc(nombre)}</strong>,</p>
         <p>Tu código de verificación es:</p>
         <div style="font-size:36px;font-weight:bold;letter-spacing:8px;
              color:#c9a96e;padding:20px;background:#1a1a1a;
              border-radius:8px;text-align:center">
-          ${codigo}
+          ${esc(codigo)}
         </div>
         <p style="color:#888;font-size:12px">
           Este código expira en 15 minutos.<br>
@@ -44,17 +55,17 @@ export async function enviarNotificacionAdmin(cita) {
     return;
   }
 
-  const servicios = Array.isArray(cita.servicios) ? cita.servicios.join(", ") : cita.servicios;
+  const servicios = esc(Array.isArray(cita.servicios) ? cita.servicios.join(", ") : cita.servicios);
   const asunto    = `Nueva cita agendada — ${cita.clienteNombre} · ${cita.fecha} ${cita.hora}`;
 
   const fila = (label, value, destacado = false) => `
     <tr>
       <td style="padding:8px 0;color:#9b8f83;font-size:13px;white-space:nowrap;
-                 vertical-align:top;width:40%">${label}</td>
+                 vertical-align:top;width:40%">${esc(label)}</td>
       <td style="padding:8px 0 8px 12px;font-size:13px;
                  color:${destacado ? "#c9a96e" : "#f0e6d3"};
                  font-weight:${destacado ? "600" : "400"};
-                 vertical-align:top">${value}</td>
+                 vertical-align:top">${esc(String(value))}</td>
     </tr>`;
 
   const html = `
@@ -116,17 +127,17 @@ export async function enviarNotificacionCancelacion(cita) {
     return;
   }
 
-  const servicios = Array.isArray(cita.servicios) ? cita.servicios.join(", ") : cita.servicios;
+  const servicios = esc(Array.isArray(cita.servicios) ? cita.servicios.join(", ") : cita.servicios);
   const asunto    = `Cita cancelada — ${cita.clienteNombre} · ${cita.fecha} ${cita.hora}`;
 
   const fila = (label, value, destacado = false) => `
     <tr>
       <td style="padding:8px 0;color:#9b8f83;font-size:13px;white-space:nowrap;
-                 vertical-align:top;width:40%">${label}</td>
+                 vertical-align:top;width:40%">${esc(label)}</td>
       <td style="padding:8px 0 8px 12px;font-size:13px;
                  color:${destacado ? "#c9a96e" : "#f0e6d3"};
                  font-weight:${destacado ? "600" : "400"};
-                 vertical-align:top">${value}</td>
+                 vertical-align:top">${esc(String(value))}</td>
     </tr>`;
 
   const html = `
@@ -189,17 +200,17 @@ export async function enviarNotificacionReagendamiento(cita) {
     return;
   }
 
-  const servicios = Array.isArray(cita.servicios) ? cita.servicios.join(", ") : cita.servicios;
+  const servicios = esc(Array.isArray(cita.servicios) ? cita.servicios.join(", ") : cita.servicios);
   const asunto    = `Cita reagendada — ${cita.clienteNombre} · ${cita.fecha} ${cita.hora}`;
 
   const fila = (label, value, destacado = false) => `
     <tr>
       <td style="padding:8px 0;color:#9b8f83;font-size:13px;white-space:nowrap;
-                 vertical-align:top;width:40%">${label}</td>
+                 vertical-align:top;width:40%">${esc(label)}</td>
       <td style="padding:8px 0 8px 12px;font-size:13px;
                  color:${destacado ? "#c9a96e" : "#f0e6d3"};
                  font-weight:${destacado ? "600" : "400"};
-                 vertical-align:top">${value}</td>
+                 vertical-align:top">${esc(String(value))}</td>
     </tr>`;
 
   const html = `
@@ -265,12 +276,12 @@ export async function enviarCodigoRecuperacion(correo, nombre, codigo) {
     html: `
       <div style="font-family:sans-serif;max-width:480px;margin:auto">
         <h2 style="color:#c9a96e">Blanca Ríos Estudio</h2>
-        <p>Hola <strong>${nombre}</strong>,</p>
+        <p>Hola <strong>${esc(nombre)}</strong>,</p>
         <p>Recibimos una solicitud para restablecer tu contraseña. Tu código es:</p>
         <div style="font-size:36px;font-weight:bold;letter-spacing:8px;
              color:#c9a96e;padding:20px;background:#1a1a1a;
              border-radius:8px;text-align:center">
-          ${codigo}
+          ${esc(codigo)}
         </div>
         <p style="color:#888;font-size:12px">
           Este código expira en 15 minutos.<br>

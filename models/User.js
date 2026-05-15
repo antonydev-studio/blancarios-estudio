@@ -23,4 +23,6 @@ usuarioSchema.methods.toJSON = function () {
   return obj;
 };
 
+usuarioSchema.index({ telefono: 1 });
+
 export default mongoose.models.User || mongoose.model("User", usuarioSchema);
