@@ -200,9 +200,21 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="section-wrap border-t border-panel-medio/50 pt-4 text-center">
-        <p className="text-caption opacity-60">
+      <div className="section-wrap border-t border-panel-medio/50 pt-4 flex flex-col gap-2 text-sm text-texto-secundario md:flex-row md:items-center md:justify-between md:gap-6">
+        <p className="text-caption opacity-80 text-center md:text-left">
           © {anio} Blanca Ríos Estudio. Todos los derechos reservados.
+        </p>
+        <p className="text-caption opacity-80 text-center md:text-right">
+          Diseñado y desarrollado por{" "}
+          <a
+            href="https://www.antonydev.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-bold text-blanco-suave underline-offset-2 hover:text-crema hover:underline"
+          >
+            AntonyDev
+          </a>
+          .
         </p>
       </div>
     </footer>
