@@ -1,0 +1,45 @@
+---
+description: Enforce unified fullstack folder structure and Vercel Functions architecture
+globs: api/**/*.js, controllers/**/*.js, models/**/*.js, lib/**/*.js
+alwaysApply: true
+---
+
+# Architecture Rules
+
+## Folder structure
+
+```
+api/[group]/[...path].js   # Vercel Functions — one catch-all per group
+src/                        # React frontend
+models/                     # Mongoose schemas (PascalCase.js)
+controllers/                # Business logic (camelCase.js)
+middleware/auth.js          # requireAuth, requireAdmin only
+services/emailService.js
+utils/                      # validators, slots, passwordUtils
+lib/mongoose.js             # cached connection — ONLY connection point
+scripts/                    # one-off scripts
+public/                     # static assets
+```
+
+## Non-negotiable
+
+- Single `package.json` and `pnpm-lock.yaml` at root
+- Single `vercel.json` and `vite.config.js` at root
+- No `backend/` or `frontend/` subdirs with own configs
+- No Express in `api/` handlers
+- Every handler: `await connectDB()` first, `405` last
+
+## Handler skeleton
+
+```js
+import { connectDB } from "../../lib/mongoose.js";
+import { requireAuth, requireAdmin } from "../../middleware/auth.js";
+
+export default async function handler(req, res) {
+  await connectDB();
+  const path = req.url.replace(/^\/api\/group/, "").replace(/\?.*/, "");
+  const id   = path.match(/^\/([^/]+)$/)?.[1];
+  // routes here
+  res.status(405).json({ mensaje: "Método no permitido." });
+}
+```

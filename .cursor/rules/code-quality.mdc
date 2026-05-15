@@ -1,0 +1,49 @@
+---
+description: Code quality standards — no comments, ES modules, async/await, naming
+globs: **/*.js, **/*.jsx
+alwaysApply: true
+---
+
+# Code Quality Rules
+
+## Comments
+
+- Default: NO comments
+- Add only when WHY is non-obvious
+- Never explain what the code does
+
+## Modules
+
+- ES Modules only: `import`/`export`
+- `require()` and `module.exports` PROHIBITED
+- Explicit `.js` extension on all relative imports
+
+## Async
+
+- `async/await` only
+- `try/catch` in every async function
+- No `.then()` / `.catch()` chains (except fire-and-forget emails)
+
+## Variables
+
+- `const` default, `let` when reassigned, never `var`
+- Models: PascalCase
+- Controllers/utils/services: camelCase
+- Components: PascalCase
+- Hooks: `useX`
+- Constants: `UPPER_SNAKE_CASE`
+
+## Forbidden
+
+- `require()` / `module.exports`
+- `var`
+- Anonymous default exports
+- Nested ternaries
+- `console.log` in production code
+- `process.exit()` in handlers
+
+## Style
+
+- Early returns over nesting
+- One responsibility per function
+- No abstractions beyond what the task requires
