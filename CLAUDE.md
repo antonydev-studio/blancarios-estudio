@@ -4,6 +4,30 @@ Read AGENTS.md, ARCHITECTURE.md, and ROADMAP.md before ANY action.
 
 ---
 
+## Global Skills — Always Active
+
+These skills are installed globally and fire automatically:
+
+| Skill | Behavior |
+|-------|----------|
+| **napkin** | Read `.claude/napkin.md` FIRST every session. Apply silently. Update it with new reusable findings. |
+| **caveman** | Terse output. Drop articles/fillers. Fragments OK. Active every response. |
+| **commit-suggest** | Append `git commit -m "..."` at end of every response with file changes. |
+| **cavecrew** | Delegate to subagents to save context. See delegation rules below. |
+
+### Cavecrew Delegation — When to Use
+
+| Task | Agent |
+|------|-------|
+| "Where is X defined / what calls Y" | `cavecrew-investigator` |
+| Surgical edit ≤2 files, scope obvious | `cavecrew-builder` |
+| Review diff, file, or branch for bugs | `cavecrew-reviewer` |
+| New feature / 3+ files / cross-cutting | Main thread |
+
+**Why:** cavecrew output is ~60% smaller than vanilla agents — main context lasts longer.
+
+---
+
 ## Stack
 
 - React 19 + Vite + Tailwind CSS 4
@@ -11,7 +35,7 @@ Read AGENTS.md, ARCHITECTURE.md, and ROADMAP.md before ANY action.
 - MongoDB Atlas M0 + Mongoose
 - JWT + bcrypt auth
 - Resend email
-- pnpm ONLY
+- **pnpm ONLY**
 
 ---
 
@@ -30,10 +54,11 @@ Read AGENTS.md, ARCHITECTURE.md, and ROADMAP.md before ANY action.
 ## Skill Discovery Protocol
 
 Before ANY implementation:
-1. Check `.skills/project/` for reusable recipes
-2. Check `.claude/workflows/` for applicable workflows
-3. Check `.claude/rules/` for relevant constraints
-4. Reuse before implementing from scratch
+1. **Read `.claude/napkin.md`** — apply critical project knowledge
+2. **Check `.skills/global/registry.md`** — find matching skill
+3. **Load skill file** — follow recipe exactly
+4. **Check `.claude/workflows/`** — find applicable workflow
+5. **Reuse before implementing from scratch**
 
 ---
 
@@ -62,6 +87,19 @@ Before ANY implementation:
 | `.claude/workflows/debug.md` | diagnosing bugs |
 | `.claude/workflows/deploy.md` | deploying to Vercel |
 | `.claude/workflows/production-checklist.md` | pre-deploy validation |
+
+---
+
+## Project Skills Registry
+
+`.skills/global/registry.md` — master index of all available project skills.
+
+Critical skills for v1.1 migration:
+- `.skills/migrations/express-to-vercel.md` — **start here for Parte 2**
+- `.skills/project/vercel-handler.md` — handler template
+- `.skills/project/api-route-pattern.md` — route ordering rules
+- `.skills/project/mongodb-connection.md` — cached connection pattern
+- `.skills/project/appointment-conflict.md` — conflict algorithm
 
 ---
 

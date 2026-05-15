@@ -1,0 +1,41 @@
+---
+description: Active global skills and delegation protocol for all AI agents in this repo
+globs: "**/*"
+alwaysApply: true
+---
+
+# Global Skills — Always Active
+
+## Napkin runbook
+
+Read `.claude/napkin.md` at session start. Apply its guidance silently. Update it when you discover reusable project-specific knowledge.
+
+## Cavecrew delegation
+
+Delegate to subagents to save context window:
+
+| Task | Agent |
+|------|-------|
+| Locate code / find symbol / trace calls | `cavecrew-investigator` |
+| Surgical edit ≤2 files | `cavecrew-builder` |
+| Review diff or file for bugs | `cavecrew-reviewer` |
+| Feature / 3+ files / cross-cutting refactor | Main thread |
+
+## Skill discovery
+
+Before implementing anything:
+1. Check `.skills/global/registry.md` for matching skill
+2. Load the skill file and follow its recipe
+3. Load the relevant `.claude/rules/` file for constraints
+4. Reuse before writing from scratch
+
+## Commit suggest
+
+After every response with file changes, append:
+```
+git commit -m "type: brief description in English"
+```
+
+## Caveman mode
+
+Active. Drop articles, fillers, pleasantries. Fragments OK. Technical terms exact.
