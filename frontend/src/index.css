@@ -1,0 +1,536 @@
+/* src/index.css */
+
+/* ── 1. FUENTES ─────────────────────────────────────────────────────────────
+   Importadas antes de tailwindcss para que el navegador las descargue primero.
+*/
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Inter:wght@300;400;500&display=swap");
+
+/* ── 2. TAILWIND v4 ─────────────────────────────────────────────────────────
+   En v4 solo se necesita esta línea. NO hay @config, NO hay @tailwind base/
+   components/utilities. Todo lo que estaba en tailwind.config.js va en @theme.
+*/
+@import "tailwindcss";
+
+/* ── 3. DESIGN TOKENS (@theme) ──────────────────────────────────────────────
+   Esto reemplaza tailwind.config.js por completo.
+   Cada variable genera sus clases automáticamente:
+   --color-crema  →  bg-crema  text-crema  border-crema
+   --font-display →  font-display
+*/
+@theme {
+  /* Fondos */
+  --color-fondo:            #111010;
+  --color-panel-oscuro:     #1C1A18;
+  --color-panel-medio:      #2E2A25;
+
+  /* Acento dorado — identidad de Blanca Rios */
+  --color-crema:            #C9A96E;
+  --color-crema-claro:      #E0C88A;
+  --color-crema-hover:      #E8D4A0;
+  --color-crema-oscuro:     #8A6A2F;
+
+  /* Textos */
+  --color-blanco-suave:     #F0EDE8;
+  --color-negro-suave:      #0D0C0B;
+  --color-texto-secundario: #7A746C;
+
+  /* Estados de citas */
+  --color-estado-pendiente:  #B8860B;
+  --color-estado-confirmada: #3A7D44;
+  --color-estado-cancelada:  #8B2020;
+
+  /* Tipografía */
+  --font-display: "Cormorant Garamond", Georgia, serif;
+  --font-sans:    "Inter", system-ui, sans-serif;
+}
+
+/* Variables para rgba (no son colores completos) */
+:root {
+  --color-crema-rgb: 201, 169, 110;
+  --color-wa-rgb:    37, 211, 102;
+}
+
+/* ── 4. RESET BASE ──────────────────────────────────────────────────────────
+   CSS puro — sin @layer, sin @apply.
+*/
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background-color: var(--color-fondo);
+  color: var(--color-blanco-suave);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  min-height: 100vh;
+  margin: 0;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  line-height: 1.2;
+}
+
+@layer base {
+  button {
+    cursor: pointer;
+    font-family: inherit;
+    background: none;
+    border: none;
+    padding: 0;
+  }
+}
+
+
+input, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  outline: none;
+}
+
+img  { max-width: 100%; display: block; }
+a    { color: inherit; text-decoration: none; }
+
+/* ── 5. UTILIDADES PERSONALIZADAS (@utility) ────────────────────────────────
+   En Tailwind v4 reemplaza @layer components + @apply.
+   Se usan igual en JSX: className="btn-primary card section-wrap"
+*/
+
+/* Botón primario — dorado, CTAs principales */
+@utility btn-primary {
+  background-color: var(--color-crema-claro);
+  color: var(--color-negro-suave);
+  padding-inline: 1.5rem;
+  padding-block: 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  box-shadow:
+    0 2px 8px rgba(var(--color-crema-rgb), 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+  transition: background-color 180ms ease, transform 150ms ease, box-shadow 180ms ease;
+  &:hover {
+    background-color: var(--color-crema-hover);
+    box-shadow:
+      0 4px 12px rgba(var(--color-crema-rgb), 0.45),
+      0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+  }
+  &:active {
+    transform: scale(0.98);
+    box-shadow:
+      0 1px 4px rgba(var(--color-crema-rgb), 0.3),
+      0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+  }
+}
+
+/* Botón WhatsApp — verde WA, mismo peso visual que btn-primary */
+@utility btn-whatsapp {
+  background-color: #25D366;
+  color: var(--color-negro-suave);
+  padding-inline: 1.5rem;
+  padding-block: 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  box-shadow:
+    0 2px 8px rgba(var(--color-wa-rgb), 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+  transition: background-color 180ms ease, transform 150ms ease, box-shadow 180ms ease;
+  &:hover {
+    background-color: #1ebe57;
+    box-shadow:
+      0 4px 12px rgba(var(--color-wa-rgb), 0.45),
+      0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+  }
+  &:active {
+    transform: scale(0.98);
+    box-shadow:
+      0 1px 4px rgba(var(--color-wa-rgb), 0.3),
+      0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+  }
+}
+
+/* Variante hero — padding generoso para CTAs principales */
+@utility btn-primary-hero {
+  padding-inline: 2rem;
+  padding-block: 0.875rem;
+  font-size: 0.875rem;
+}
+
+/* Botón secundario — borde sutil */
+@utility btn-secondary {
+  padding-inline: 1.5rem;
+  padding-block: 0.75rem;
+  border-radius: 9999px;
+  border: 2px solid var(--color-panel-medio);
+  color: var(--color-blanco-suave);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: background-color 150ms;
+  &:hover  { background-color: color-mix(in srgb, var(--color-panel-medio) 60%, transparent); }
+  &:active { scale: 0.98; }
+}
+
+/* Botón ghost — solo texto */
+@utility btn-ghost {
+  font-size: 0.875rem;
+  color: var(--color-texto-secundario);
+  transition: color 150ms;
+  &:hover { color: var(--color-blanco-suave); }
+}
+
+/* Input de formulario */
+@utility input-base {
+  width: 100%;
+  border-radius: 8px;
+  background-color: color-mix(in srgb, var(--color-panel-medio) 40%, transparent);
+  border: 1px solid var(--color-panel-medio);
+  padding: 0.625rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--color-blanco-suave);
+  transition: border-color 150ms;
+  &::placeholder { color: var(--color-texto-secundario); }
+  &:focus        { border-color: var(--color-crema); }
+}
+
+/* Card — panel oscuro con borde */
+@utility card {
+  background-color: var(--color-panel-oscuro);
+  border-radius: 20px;
+  border: 1px solid color-mix(in srgb, var(--color-panel-medio) 80%, transparent);
+}
+
+/* Card para formularios: login, registro */
+@utility card-form {
+  background-color: color-mix(in srgb, var(--color-panel-oscuro) 95%, transparent);
+  border-radius: 20px;
+  border: 1px solid var(--color-panel-medio);
+  padding: 2rem;
+}
+
+/* Label de formulario */
+@utility label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--color-texto-secundario);
+  margin-bottom: 0.25rem;
+}
+
+/* Navbar sticky con blur */
+@utility navbar {
+  border-bottom: 1px solid color-mix(in srgb, var(--color-panel-medio) 70%, transparent);
+  background-color: color-mix(in srgb, var(--color-fondo) 95%, transparent);
+  backdrop-filter: blur(8px);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+/* Contenedor inner del navbar */
+@utility navbar-inner {
+  max-width: 72rem;
+  margin-inline: auto;
+  padding-inline: 1rem;
+  padding-block: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Wrapper de sección */
+@utility section-wrap {
+  max-width: 72rem;
+  margin-inline: auto;
+  padding-inline: 1rem;
+}
+
+/* Badges de estado */
+@utility badge {
+  display: inline-block;
+  font-size: 0.6875rem;
+  padding-inline: 0.75rem;
+  padding-block: 0.25rem;
+  border-radius: 9999px;
+  color: var(--color-blanco-suave);
+}
+@utility badge-pendiente  { background-color: var(--color-estado-pendiente);  }
+@utility badge-confirmada { background-color: var(--color-estado-confirmada); }
+@utility badge-cancelada  { background-color: var(--color-estado-cancelada);  }
+
+/* Selección crema — mismo estilo que botón Confirmar cita (día del calendario, tarjeta de servicio) */
+@utility selection-crema {
+  background-color: var(--color-crema-claro);
+  color: var(--color-negro-suave);
+  box-shadow:
+    0 2px 8px rgba(var(--color-crema-rgb), 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+}
+
+button.servicio-picker-card {
+  background-color: var(--color-panel-oscuro);
+  border-color: color-mix(in srgb, var(--color-panel-medio) 80%, transparent);
+  color: var(--color-blanco-suave);
+}
+button.servicio-picker-card:hover {
+  background-color: color-mix(in srgb, var(--color-panel-medio) 40%, transparent);
+  border-color: var(--color-panel-medio);
+}
+
+/* Scroll margin — esquiva el navbar sticky */
+@utility scroll-mt-header { scroll-margin-top: 72px; }
+
+/* Títulos de sección (Servicios, Reseñas, etc.) */
+@utility section-title {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-blanco-suave);
+  line-height: 1.2;
+}
+
+/* Subtítulo / descripción de sección */
+@utility section-subtitle {
+  font-size: 0.875rem;
+  color: var(--color-texto-secundario);
+}
+
+/* Etiqueta de marca (ej. "Barbería" bajo el logo) */
+@utility brand-label {
+  font-size: 0.625rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--color-crema);
+}
+
+/* Encabezado de bloque en footer (Contacto, Horario) */
+@utility footer-heading {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-blanco-suave);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Texto pequeño (copyright, metadatos) */
+@utility text-caption {
+  font-size: 0.6875rem;
+  color: var(--color-texto-secundario);
+}
+
+/* Enlace de nav activo (scroll spy) */
+@utility nav-link-active {
+  color: var(--color-blanco-suave);
+  border-bottom: 1px solid var(--color-crema);
+  padding-bottom: 0.125rem;
+}
+
+/* Overlay del hero con gradiente crema */
+@utility hero-overlay-gradient {
+  background: radial-gradient(
+    circle at top,
+    color-mix(in srgb, var(--color-crema) 10%, transparent),
+    transparent 60%
+  );
+}
+
+/* Leyenda del hero sobre fondo oscuro */
+@utility hero-legend {
+  color: var(--color-blanco-suave);
+  font-weight: 500;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8));
+}
+
+/* Gradiente dorado en texto */
+@utility text-gradient-gold {
+  background: linear-gradient(135deg, var(--color-crema-claro), var(--color-crema-oscuro));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── 6. PANEL DE ADMINISTRADOR ──────────────────────────────────────────────
+   Utilidades exclusivas del módulo admin.
+   Misma fuente de tokens que el resto del sistema.
+*/
+
+/* Sidebar panel — columna lateral fija */
+@utility admin-sidebar-panel {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-panel-oscuro);
+  border-right: 1px solid color-mix(in srgb, var(--color-panel-medio) 70%, transparent);
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+/* Área de contenido principal del admin */
+@utility admin-main {
+  min-height: 100vh;
+  overflow-y: auto;
+}
+
+/* Barra superior móvil del admin */
+@utility admin-mobile-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background-color: var(--color-panel-oscuro);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-panel-medio) 70%, transparent);
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+/* Ítem de navegación del sidebar */
+@utility admin-nav-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  text-align: left;
+  transition: background-color 150ms, color 150ms, border-color 150ms;
+  min-height: 44px;
+}
+
+/* Ítem de navegación activo */
+@utility admin-nav-item-active {
+  background-color: color-mix(in srgb, var(--color-crema) 12%, transparent);
+  border-color: color-mix(in srgb, var(--color-crema) 35%, transparent) !important;
+  color: var(--color-blanco-suave);
+  font-weight: 500;
+}
+
+/* Tabla admin — contenedor con scroll horizontal y bordes */
+@utility admin-table-wrap {
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--color-panel-medio) 70%, transparent);
+  background-color: var(--color-panel-oscuro);
+  overflow: hidden;
+  overflow-x: auto;
+}
+
+/* Card de servicio admin — sin imagen, datos compactos */
+@utility admin-service-card {
+  background-color: var(--color-panel-oscuro);
+  border-radius: 20px;
+  border: 2px solid color-mix(in srgb, var(--color-panel-medio) 80%, transparent);
+  transition: border-color 200ms;
+  &:hover { border-color: color-mix(in srgb, var(--color-crema) 40%, transparent); }
+}
+
+/* Slot de hora bloqueado en disponibilidad */
+@utility hora-slot-bloqueada {
+  background-color: color-mix(in srgb, var(--color-estado-cancelada) 15%, transparent);
+  border-color: color-mix(in srgb, var(--color-estado-cancelada) 40%, transparent);
+  color: var(--color-estado-cancelada);
+}
+
+/* Slot de hora ocupada por cita de cliente */
+@utility hora-slot-ocupada {
+  background-color: color-mix(in srgb, var(--color-estado-confirmada) 15%, transparent);
+  border-color: color-mix(in srgb, var(--color-estado-confirmada) 40%, transparent);
+  color: var(--color-estado-confirmada);
+  cursor: default;
+}
+
+/* Slot de hora libre en disponibilidad */
+@utility hora-slot-libre {
+  background-color: var(--color-panel-oscuro);
+  border-color: color-mix(in srgb, var(--color-panel-medio) 80%, transparent);
+  color: var(--color-blanco-suave);
+  &:hover {
+    border-color: color-mix(in srgb, var(--color-crema) 40%, transparent);
+    color: var(--color-crema);
+  }
+}
+
+/* TimeChip — hora seleccionada (inicio de cita) */
+@utility chip-selected {
+  background-color: var(--color-crema) !important;
+  color: var(--color-negro-suave) !important;
+  border-color: var(--color-crema) !important;
+  font-weight: 600;
+  padding-inline: 0.75rem !important;
+  padding-block: 0.5rem !important;
+  box-shadow: 0 2px 10px rgba(var(--color-crema-rgb), 0.45);
+}
+
+/* TimeChip — hora dentro del rango de duración */
+@utility chip-in-range {
+  background-color: rgba(201, 169, 110, 0.15) !important;
+  color: var(--color-crema) !important;
+  border-color: rgba(201, 169, 110, 0.40) !important;
+  padding-inline: 0.75rem !important;
+  padding-block: 0.5rem !important;
+}
+
+/* Botón destructivo — usa el rojo de la paleta (--color-estado-cancelada) */
+@utility btn-danger {
+  background-color: var(--color-estado-cancelada);
+  color: var(--color-blanco-suave);
+  padding-inline: 1.5rem;
+  padding-block: 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border: 1px solid color-mix(in srgb, var(--color-estado-cancelada) 70%, transparent);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-estado-cancelada) 40%, transparent), 0 0 0 1px rgba(255,255,255,0.06) inset;
+  transition: background-color 180ms ease, transform 150ms ease, box-shadow 180ms ease;
+  &:hover {
+    background-color: color-mix(in srgb, var(--color-estado-cancelada) 85%, #000);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--color-estado-cancelada) 50%, transparent), 0 0 0 1px rgba(255,255,255,0.08) inset;
+  }
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+/* Botón icono — h-11 w-11, hamburger/close del sidebar */
+@utility btn-icon-admin {
+  display: flex;
+  height: 2.75rem;
+  width: 2.75rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  transition: all 300ms;
+}
+
+/* Botón icono mini — w-8 h-8, editar/toggle en cards */
+@utility btn-icon-mini {
+  display: flex;
+  width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  transition: all 150ms;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* AdminFilterChip — filtro activo */
+@utility chip-filter-selected {
+  background-color: var(--color-crema-claro) !important;
+  color: var(--color-negro-suave) !important;
+  border-color: transparent !important;
+  box-shadow:
+    0 2px 8px rgba(var(--color-crema-rgb), 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+}
