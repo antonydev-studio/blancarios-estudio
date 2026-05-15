@@ -1,74 +1,85 @@
-# Barber BR — Sistema de Gestión para Barbería
+# Barber BR — Blanca Ríos Estudio
 
-Plataforma completa para gestión de citas, clientes y servicios de una barbería.  
-Incluye panel de administración y portal de cliente con historial y reagendado.
+Full-stack booking and management platform for a barbershop.  
+Clients can book appointments online; admins manage the full operation from a dedicated panel.
+
+**Production:** https://blancarios-estudio.vercel.app
+
+---
 
 ## Stack
 
-| Capa | Tecnología |
-|------|-----------|
-| Frontend | React 19, Vite, Tailwind CSS 4 |
-| Backend | Node.js, Express |
-| Base de datos | MongoDB Atlas (Mongoose) |
-| Auth | JWT + bcrypt, verificación por correo |
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 19 + Vite + Tailwind CSS 4 |
+| Backend | Vercel Serverless Functions (Node.js 22) |
+| Database | MongoDB Atlas M0 (Mongoose 9) |
+| Auth | JWT (7d) + bcrypt + email verification |
+| Email | Resend |
+| Package manager | pnpm (npm/npx/yarn prohibited) |
+| Deploy | Vercel (frontend + backend unified) |
 
-## Estructura del proyecto
+---
 
-```
-BARBER-BR/
-├── backend/      # API REST en Express
-└── frontend/     # SPA en React + Vite
-```
-
-## Correr el proyecto localmente
-
-### 1. Backend
+## Local Development
 
 ```bash
-cd backend
-cp .env.example .env   # completar las variables (ver abajo)
-npm install
-npm run dev            # puerto 5000
+pnpm install
+cp .env.example .env.local   # fill in all variables
+pnpm vercel dev              # localhost:3000 — frontend + functions unified
 ```
 
-### 2. Frontend
+Requires [Vercel CLI](https://vercel.com/docs/cli). The `pnpm vercel dev` command serves both the React frontend and all Vercel Functions on the same port.
 
-```bash
-cd frontend
-npm install
-npm run dev            # puerto 5173
-```
+---
 
-El frontend usa el proxy de Vite (`/api → localhost:5000`).  
-No requiere configuración adicional para desarrollo local.
-
-## Variables de entorno — backend (`backend/.env`)
+## Environment Variables
 
 ```env
-PORT=5000
-MONGO_URI=mongodb+srv://<usuario>:<password>@<cluster>.mongodb.net/<db>
-JWT_SECRET=una_clave_secreta_larga
-EMAIL_USER=correo@gmail.com      # para envío de códigos de verificación
-EMAIL_PASS=contraseña_de_app     # app password de Gmail
-FRONTEND_URL=https://tu-dominio.vercel.app
+MONGO_URI=mongodb+srv://...
+JWT_SECRET=minimum-32-char-random-string
+RESEND_API_KEY=re_xxxx
+EMAIL_FROM=Blanca Ríos Estudio <noreply@blancariosestudio.com>
+FRONTEND_URL=https://blancariosestudio.com
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=...
 ```
 
-> En desarrollo, si `EMAIL_USER`/`EMAIL_PASS` están vacíos los códigos de verificación  
-> se imprimen en la consola del backend (`[DEV] Código de verificación para ...`).
+---
 
-## Funcionalidades principales
+## Testing
 
-**Portal del cliente**
-- Registro con verificación por correo
-- Agendar citas (con o sin cuenta)
-- Historial de citas, reagendado y cancelación
-- Recuperación de contraseña
+```bash
+pnpm test:e2e:smoke      # non-destructive — always safe
+pnpm test:e2e:validate   # mutation tests — creates TEST QA FINAL data in prod
+pnpm test:cleanup        # clean up test data (requires MONGO_URI env var)
+```
 
-**Panel de administración**
-- Dashboard con métricas del día
-- Gestión de citas (confirmar, finalizar, cancelar)
-- Catálogo de servicios
-- Configuración de horarios y días bloqueados
-- Clientes con notas y lista negra
-- Balance de movimientos
-- Reportes por período
+For admin panel tests:
+
+```bash
+TEST_ADMIN_EMAIL=... TEST_ADMIN_PASSWORD=... \
+  pnpm playwright test tests/validation/admin-panel.spec.ts
+```
+
+See `FINAL_VALIDATION.md` for full validation status and `ARCHITECTURE.md` for complete technical documentation.
+
+---
+
+## Features
+
+**Client Portal**
+- Book appointments with or without an account
+- 6-digit email verification on registration
+- Appointment history, cancellation, rescheduling (once)
+- Password recovery
+
+**Admin Panel**
+- Dashboard KPIs (today / week / month)
+- Appointment management (confirm, finalize, cancel, notes)
+- Service catalog CRUD
+- Weekly schedule + blocked days + buffer time
+- Client management with blacklist
+- Financial movement tracking
+- Reports by period
+- Homepage content editor

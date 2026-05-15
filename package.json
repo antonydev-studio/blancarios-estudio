@@ -16,7 +16,8 @@
     "test:e2e:smoke": "playwright test tests/smoke tests/e2e",
     "test:e2e:validate": "playwright test tests/validation",
     "test:e2e:report": "playwright show-report",
-    "test:cleanup": "node scripts/cleanup-test-data.js"
+    "test:cleanup": "node scripts/cleanup-test-data.js",
+    "create-admin": "node scripts/createAdmin.js"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.2.1",

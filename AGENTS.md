@@ -1,142 +1,78 @@
-# AGENTS.md — Instrucciones para Claude Code y Cursor
+# AGENTS.md — AI Agent Instructions for Barber BR
 
-Lee ARCHITECTURE.md y ROADMAP.md antes de cualquier acción.
-
----
-
-## Reglas absolutas — no negociables
-
-### pnpm es el único gestor de paquetes permitido
-- ✅ `pnpm install` `pnpm add` `pnpm run` `pnpm dlx`
-- ❌ `npm` `npx` `yarn` — PROHIBIDOS absolutamente
-- Si encuentras `package-lock.json` → eliminarlo
-- Si encuentras `yarn.lock` → eliminarlo
-- Si encuentras `npm run` en algún script → reemplazarlo con `pnpm`
-- Si encuentras `npx` → reemplazarlo con `pnpm dlx`
-
-### Skills y herramientas globales
-Antes de comenzar cualquier tarea, busca y activa todas las skills, extensiones, MCP servers y herramientas globales disponibles en el entorno. Instala con `pnpm dlx` cualquier herramienta CLI que pueda acelerar el trabajo (scaffolding, codemods, linters, formatters). 
-
-## AI-first development workflow
-
-The project is intentionally optimized for:
-- Claude Code
-- Cursor
-- MCP tooling
-- AI-assisted refactors
-- predictable architecture
-- deterministic conventions
-
-### ES Modules obligatorio
-- `import/export` siempre
-- `require()` / `module.exports` → PROHIBIDOS
-- `package.json` debe tener `"type": "module"`
+Read ARCHITECTURE.md and ROADMAP.md before any action.  
+Read `.claude/napkin.md` for live session-accumulated gotchas.
 
 ---
 
-## Tarea activa: Refactor v1.1
+## Absolute Rules — Non-Negotiable
 
-Dos partes en orden estricto:
+| Rule | Correct | Prohibited |
+|------|---------|-----------|
+| Package manager | `pnpm install`, `pnpm add`, `pnpm dlx` | `npm`, `npx`, `yarn`, `bun` |
+| Module system | `import/export` | `require()`, `module.exports` |
+| Async pattern | `async/await` | callbacks, `.then()` chains |
+| Extensions | `import x from "./y.js"` | implicit extension omission |
+| Environment | Node.js 22, Vercel serverless | Express, in-memory singletons |
 
-### Parte 1 — Restructura de carpetas
-Reorganizar de estructura separada (backend/ + frontend/) a estructura unificada Opción 2.
-
-Mapeo exacto:
-```
-backend/src/controllers/  →  controllers/
-backend/src/models/       →  models/
-backend/src/middleware/   →  middleware/
-backend/src/services/     →  services/
-backend/src/utils/        →  utils/
-backend/src/lib/          →  lib/
-backend/src/scripts/      →  scripts/
-frontend/src/             →  src/
-frontend/public/          →  public/
-frontend/index.html       →  index.html
-frontend/vite.config.js   →  vite.config.js
-frontend/vercel.json      →  vercel.json
-```
-
-Después de mover archivos:
-1. Crear `package.json` unificado en raíz con `pnpm`
-2. Eliminar `backend/package.json` y `frontend/package.json`
-3. Eliminar `backend/package-lock.json` y `frontend/package-lock.json`
-4. Eliminar ambas carpetas `node_modules/`
-5. Correr `pnpm install` en raíz
-6. Verificar que todos los imports relativos siguen siendo válidos
-
-### Parte 2 — Migración a Vercel Functions
-Orden de ejecución:
-
-1. `lib/mongoose.js` — conexión cacheada (ver patrón en ARCHITECTURE.md)
-2. `api/config/[...path].js` — más simple, solo GET y PATCH
-3. `api/services/[...path].js`
-4. `api/auth/[...path].js` — 8 endpoints, el más complejo
-5. `api/appointments/[...path].js` — cuidado con orden de rutas: `/occupied` antes de `/:id`
-6. `api/movements/[...path].js`
-7. `api/users/[...path].js`
-8. Actualizar `vercel.json`
-9. Eliminar `express-rate-limit` de dependencias
-10. `pnpm install` para limpiar lockfile
+If you find `package-lock.json` → delete it. If you find `yarn.lock` → delete it.
 
 ---
 
-## Convenciones de código
+## Architecture Invariants
 
-### Nombrado
-- Modelos: PascalCase (`Appointment.js`)
-- Controllers, utils, services: camelCase (`appointmentController.js`)
-- Componentes React: PascalCase (`AppointmentCard.jsx`)
-- Hooks: `use` + PascalCase (`useAdminApi.js`)
-- Constantes globales: UPPER_SNAKE_CASE (`CORREO_REGEX`)
+1. **`await connectDB()` is always the first line** of every Vercel Function handler
+2. **Mongoose model guard** — always `mongoose.models.X || mongoose.model("X", schema)`
+3. **Route order** — specific paths (`/occupied`, `/mias`, `/auto-finalizar`) BEFORE `/:id` catch-all
+4. **`req.params.id` does not exist** in Vercel — parse from URL: `path.match(/^\/([^/]+)$/)?.[1]`
+5. **`req.query` does not exist** — use `new URL(req.url, "http://localhost").searchParams`
+6. **Emails are fire-and-forget** — `emailService.send(data).catch(() => {})` never `await`
+7. **No transactions** on Atlas M0 — use simple find/update queries
+8. **vercel.json rewrite** uses negative lookahead `/((?!api/).*)` — bare `/(.*) → /index.html` CDN-caches API paths
 
-### Respuestas API — mantener formato existente
+---
+
+## API Response Format
+
 ```js
-res.json({ appointment })                              // éxito singular
-res.json({ appointments })                             // éxito array
-res.status(201).json({ service })                      // creación
-res.status(400).json({ mensaje: "En español." })       // error
+// Success
+res.json({ appointment })              // singular
+res.json({ appointments })             // array
+res.status(201).json({ service })      // created
+
+// Errors — Spanish, period at end, "mensaje" key always
+res.status(400).json({ mensaje: "Mensaje descriptivo en español." })
 res.status(401).json({ mensaje: "No autorizado." })
+res.status(403).json({ mensaje: "Acceso denegado." })
 res.status(404).json({ mensaje: "No encontrado." })
-res.status(500).json({ mensaje: "Error interno." })
+res.status(405).json({ mensaje: "Método no permitido." })
+res.status(409).json({ mensaje: "Este horario ya no está disponible." })
+res.status(500).json({ mensaje: "Error interno del servidor." })
 ```
 
-### Async
-- `async/await` siempre en controllers
-- `try/catch` en cada handler
-- Emails: fire-and-forget con `.catch()` para no bloquear respuesta
+**Exception:** `blocked-clients` controller returns `{ ok: true, data: [...] }` — do not "fix" this without checking all callers.
 
 ---
 
-## Lo que NO tocar
-
-- ❌ Lógica dentro de los controllers (solo mover, no modificar)
-- ❌ Esquemas de los modelos Mongoose
-- ❌ `emailService.js` (solo mover de carpeta)
-- ❌ Archivos `.jsx` del frontend
-- ❌ `AuthContext.jsx`
-- ❌ `vite.config.js` (solo mover de carpeta)
-
----
-
-## Estructura de un handler serverless
+## Handler Template
 
 ```js
-// api/[grupo]/[...path].js
+// api/[group]/[[...path]].js
 import { connectDB } from "../../lib/mongoose.js";
 import { requireAuth, requireAdmin } from "../../middleware/auth.js";
-import { getServices, createService, updateService, deleteService } from "../../controllers/serviceController.js";
+import { getX, createX, updateX, deleteX } from "../../controllers/xController.js";
 
 export default async function handler(req, res) {
   await connectDB();
 
-  const path = req.url.replace(/^\/api\/services/, "").replace(/\?.*/, "");
+  const path = req.url.replace(/^\/api\/group/, "").replace(/\?.*/, "");
   const id   = path.match(/^\/([^/]+)$/)?.[1];
+  req.params = { id };
 
-  if (req.method === "GET" && !id)          return getServices(req, res);
-  if (req.method === "POST" && !id)         return requireAdmin(req, res, () => createService(req, res));
-  if (req.method === "PATCH" && id)         return requireAdmin(req, res, () => updateService(req, res));
-  if (req.method === "DELETE" && id)        return requireAdmin(req, res, () => deleteService(req, res));
+  if (req.method === "GET"    && !id) return getX(req, res);
+  if (req.method === "POST"   && !id) return requireAdmin(req, res, () => createX(req, res));
+  if (req.method === "PATCH"  && id)  return requireAdmin(req, res, () => updateX(req, res));
+  if (req.method === "DELETE" && id)  return requireAdmin(req, res, () => deleteX(req, res));
 
   res.status(405).json({ mensaje: "Método no permitido." });
 }
@@ -144,205 +80,106 @@ export default async function handler(req, res) {
 
 ---
 
-## Variables de entorno disponibles
+## Controller Template
 
+```js
+export async function getX(req, res) {
+  try {
+    const item = await Model.findById(req.params.id).lean();
+    if (!item) return res.status(404).json({ mensaje: "No encontrado." });
+    res.json({ item });
+  } catch {
+    res.status(500).json({ mensaje: "Error interno del servidor." });
+  }
+}
 ```
-MONGO_URI
-JWT_SECRET
-RESEND_API_KEY
-EMAIL_FROM
-FRONTEND_URL=https://blancariosestudio.com
-ADMIN_EMAIL
-ADMIN_PASSWORD
-```
+
+- `lean()` on all read-only queries
+- `catch` takes no argument (avoids unused var lint)
+- No `console.log` in production controllers
 
 ---
 
-## Cómo probar localmente
+## Files — NEVER Modify
+
+These files are frozen. Move only, never edit logic:
+
+- `src/context/AuthContext.jsx`
+- `vite.config.js`
+- `index.html`
+- `services/emailService.js`
+- All `models/*.js` schemas (structure only — guard pattern is OK to add)
+
+---
+
+## Frontend Constraints
+
+- SPA uses internal React state routing — all pages at `/`
+- Navigation is via button clicks, not URL changes
+- Tailwind CSS 4 — utility classes only, no inline `style=`
+- React 19 — no Redux, no Zustand
+- Mobile/desktop responsive: `md:hidden` and `hidden md:block` render components twice in DOM
+
+---
+
+## Testing Workflow
 
 ```bash
-pnpm install
-pnpm dlx vercel dev    # localhost:3000 — frontend + functions juntos
+# Always-safe baseline
+pnpm test:e2e:smoke
+
+# Mutation tests (creates TEST QA FINAL data in prod)
+pnpm test:e2e:validate
+
+# Admin panel (requires credentials)
+TEST_ADMIN_EMAIL=... TEST_ADMIN_PASSWORD=... \
+  pnpm playwright test tests/validation/admin-panel.spec.ts
+
+# Clean up test data after mutations
+MONGO_URI=... pnpm test:cleanup
 ```
 
----
-
-## Reporte de avance por paso
-
-Después de cada paso completado, reportar:
-- ✅ Qué se completó
-- 🧪 Qué se probó y resultado
-- ⚠️ Problemas encontrados y resolución
-- ➡️ Siguiente paso
+**Playwright gotchas:**
+- `test.fail()` means "expect this test to fail" — use `test.skip(true, reason)` to abort mid-test
+- `page.getByDisplayValue()` does not exist — use `expect(locator).toHaveValue("...")`
+- Production returns 429 on repeated login attempts — always `expect([401, 429]).toContain(status)`
+- `ServicePickerSection` renders twice (mobile + desktop) — use `.first()` / `.last()` based on viewport
+- `getByRole()` skips hidden elements; CSS locators find all (including hidden DOM)
 
 ---
 
-## Criterio de éxito final
+## Deployment Workflow
 
-- [ ] Estructura de carpetas coincide exactamente con ARCHITECTURE.md
-- [ ] Un solo `package.json` en raíz, cero `package-lock.json` en el repo
-- [ ] `pnpm-lock.yaml` presente y commitado
-- [ ] Todos los endpoints responden igual que en Railway
-- [ ] Flujo completo: registro → verificación → login → agendar → admin gestiona
-- [ ] Emails funcionando (verificación + notificaciones)
-- [ ] Sin referencias a Railway en ningún archivo
-- [ ] Sin `express-rate-limit` en el proyecto
-- [ ] Sin `npm`, `npx` o `yarn` en scripts ni documentación
-- [ ] `pnpm vercel dev` levanta todo sin errores
+```bash
+pnpm build              # verify build passes first
+pnpm vercel deploy --prod
+```
 
-# AI Skill Discovery System
-
-Before starting ANY task, all AI agents MUST:
-
-1. Analyze the task type
-2. Search for globally available skills
-3. Activate relevant skills automatically
-4. Reuse existing workflows before creating new ones
-5. Prefer established tooling over manual implementation
-
-This applies to:
-- Claude Code
-- Cursor
-- future AI agents
-- MCP-enabled environments
+Vercel Hobby limit: 12 functions. Current count: 12 (exactly at limit). Do not add new api groups without removing an existing one or upgrading plan.
 
 ---
 
-# Mandatory Skill Discovery
+## Code Quality Rules
 
-Agents MUST use available skill discovery tools such as:
-- find_skill
-- skill search
-- MCP discovery
-- global workflow registries
-- shared automation systems
-
-before implementing solutions manually.
+- No comments unless the WHY is non-obvious
+- No docstrings or multi-line comment blocks
+- No extra abstractions beyond what the task requires
+- No defensive validation on internal code — only validate at system boundaries
+- Variables: `PascalCase` models, `camelCase` everything else, `UPPER_SNAKE_CASE` constants
+- File size: controllers ~150 lines max, handlers lean (routing only)
 
 ---
 
-# Required Skill Categories
+## Skill Discovery (Claude Code)
 
-Depending on the task, agents should automatically search for and activate skills related to:
+Before implementing anything:
+1. Read `.claude/napkin.md` — apply silently
+2. Check `.skills/global/registry.md` for matching skill
+3. Check `.claude/workflows/` for applicable workflow
+4. Reuse before implementing from scratch
 
-## Architecture
-- system design
-- fullstack architecture
-- serverless architecture
-- Vercel optimization
-- monorepo restructuring
-
-## Frontend
-- React optimization
-- Tailwind patterns
-- accessibility
-- responsive UI
-- animation systems
-- form architecture
-
-## Backend
-- Vercel Functions
-- MongoDB optimization
-- JWT auth
-- API architecture
-- caching strategies
-- async patterns
-
-## Infrastructure
-- pnpm workflows
-- CI/CD
-- deployment optimization
-- environment management
-- build optimization
-
-## Code Quality
-- linting
-- formatting
-- static analysis
-- refactoring
-- dead code cleanup
-- import optimization
-
-## Performance
-- React render optimization
-- bundle optimization
-- lazy loading
-- caching
-- database performance
-
-## DX (Developer Experience)
-- codemods
-- scaffolding
-- automation
-- CLI tooling
-- hot reload optimization
-- workspace optimization
-
-## Testing
-- unit testing
-- integration testing
-- endpoint testing
-- E2E workflows
-
----
-
-# Skill Reuse Priority
-
-Agents MUST prioritize:
-1. existing global skills
-2. existing workflows
-3. existing automations
-4. existing tooling
-5. existing codemods
-
-before writing custom implementations.
-
----
-
-# Premium Engineering Goal
-
-The goal is to make the project:
-- faster to develop
-- more maintainable
-- AI-native
-- automation-friendly
-- production-grade
-- architecturally consistent
-
-Agents should actively look for ways to:
-- reduce repetitive work
-- automate migrations
-- improve developer experience
-- improve code quality
-- improve deployment reliability
-- improve maintainability
-
----
-
-# Tooling Philosophy
-
-Use tools aggressively when they:
-- accelerate development
-- improve consistency
-- reduce manual work
-- improve architecture quality
-- reduce future maintenance cost
-
-Avoid tools when they:
-- introduce unnecessary complexity
-- add heavy runtime dependencies
-- reduce maintainability
-- conflict with project conventions
-
----
-
-# Shared Skill Synchronization
-
-Claude Code and Cursor MUST behave consistently.
-
-Both environments should:
-- follow the same architecture rules
-- use the same conventions
-- activate the same skill categories
-- reuse the same workflows
-- preserve the same project standards
+Delegation:
+- "Where is X?" → `cavecrew-investigator`
+- Edit ≤2 files, scope obvious → `cavecrew-builder`
+- Review diff/file → `cavecrew-reviewer`
+- New feature / 3+ files → main thread

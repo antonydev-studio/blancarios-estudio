@@ -1,50 +1,51 @@
 # ARCHITECTURE.md — Barber BR (Blanca Ríos Estudio)
 
-## Visión general
-
-Aplicación MERN Stack de gestión integral para barbería. Permite a clientes agendar citas en línea y al administrador controlar toda la operación desde un panel dedicado.
-
-**Stack:**
-- Frontend: React 19 + Vite + Tailwind CSS 4
-- Backend: Vercel Serverless Functions (Node.js)
-- Base de datos: MongoDB Atlas M0 (Mongoose)
-- Emails: Resend
-- Auth: JWT + bcrypt + verificación por código de 6 dígitos
-- Gestor de paquetes: **pnpm** — npm está PROHIBIDO en este proyecto
-- Deploy: Vercel (frontend + backend unificados, $0/mes)
+**Production URL:** https://blancarios-estudio.vercel.app  
+**Version:** 1.1.0 — Production  
+**Last validated:** 2026-05-15 (104 Playwright tests, 0 failures)
 
 ---
 
-## AI-first development workflow
+## Stack
 
-The project is intentionally optimized for:
-- Claude Code
-- Cursor
-- MCP tooling
-- AI-assisted refactors
-- predictable architecture
-- deterministic conventions
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 19 + Vite + Tailwind CSS 4 |
+| Backend | Vercel Serverless Functions (Node.js 22) |
+| Database | MongoDB Atlas M0 (Mongoose 9) |
+| Auth | JWT (7d) + bcrypt + 6-digit email verification |
+| Email | Resend |
+| Package manager | **pnpm** — npm/npx/yarn are PROHIBITED |
+| Deploy | Vercel Hobby (frontend + backend unified, $0/month) |
 
-## Estructura de carpetas (Fullstack unificado — Opción 2)
+---
+
+## Folder Structure
 
 ```
 barber-br/
-│
-├── api/                          # Vercel Serverless Functions (backend)
-│   ├── auth/
-│   │   └── [...path].js          # Maneja /api/auth/*
+├── api/                          # Vercel Serverless Functions
 │   ├── appointments/
-│   │   └── [...path].js          # Maneja /api/appointments/*
-│   ├── services/
-│   │   └── [...path].js
+│   │   ├── index.js              # handles /api/appointments (root)
+│   │   └── [[...path]].js        # handles /api/appointments/*
+│   ├── auth/
+│   │   └── [[...path]].js        # handles /api/auth/* (no root route)
+│   ├── blocked-clients/
+│   │   ├── index.js
+│   │   └── [[...path]].js
 │   ├── config/
-│   │   └── [...path].js
-│   ├── users/
-│   │   └── [...path].js
-│   └── movements/
-│       └── [...path].js
+│   │   └── index.js              # only GET + PATCH at root, no id routes
+│   ├── movements/
+│   │   ├── index.js
+│   │   └── [[...path]].js
+│   ├── services/
+│   │   ├── index.js
+│   │   └── [[...path]].js
+│   └── users/
+│       ├── index.js
+│       └── [[...path]].js
 │
-├── src/                          # Frontend React
+├── src/                          # React SPA (internal state routing)
 │   ├── pages/
 │   │   ├── HomePage.jsx
 │   │   ├── LoginPage.jsx
@@ -52,202 +53,152 @@ barber-br/
 │   │   ├── ForgotPasswordPage.jsx
 │   │   ├── ScheduleAppointmentPage.jsx
 │   │   ├── AppointmentHistoryPage.jsx
-│   │   ├── AdminPage.jsx
-│   │   └── NotFoundPage.jsx
+│   │   ├── NotFoundPage.jsx
+│   │   └── admin/
+│   │       ├── AdminPage.jsx           # tab router
+│   │       ├── DashboardSection.jsx
+│   │       ├── AppointmentsSection.jsx
+│   │       ├── ClientsSection.jsx
+│   │       ├── AvailabilitySection.jsx
+│   │       ├── BalanceSection.jsx
+│   │       ├── CatalogSection.jsx
+│   │       ├── BlockedClientsSection.jsx
+│   │       ├── HomepageSection.jsx
+│   │       └── ReportsSection.jsx
 │   ├── components/
-│   │   ├── admin/                # Componentes del panel admin
-│   │   ├── sections/             # Secciones de páginas
-│   │   └── ui/                   # Átomos reutilizables (InputField, Toast, etc.)
+│   │   ├── admin/
+│   │   ├── sections/
+│   │   └── ui/
 │   ├── hooks/
-│   │   ├── useAdminApi.js
-│   │   ├── useAdminData.js
-│   │   └── useHomepageContent.js
-│   └── context/
-│       └── AuthContext.jsx
+│   ├── context/
+│   │   └── AuthContext.jsx       # FROZEN — do not edit
+│   └── utils/
+│       └── passwordUtils.js
 │
-├── models/                       # Esquemas Mongoose
-│   ├── Appointment.js
-│   ├── Config.js
-│   ├── Movement.js
-│   ├── Service.js
-│   └── User.js
-│
-├── controllers/                  # Lógica de negocio pura
+├── controllers/                  # Business logic — one file per domain
 │   ├── appointmentController.js
 │   ├── authController.js
+│   ├── blockedClientController.js
 │   ├── configController.js
 │   ├── movementController.js
 │   ├── serviceController.js
 │   └── userController.js
 │
+├── models/                       # Mongoose schemas — never bare mongoose.model()
+│   ├── Appointment.js
+│   ├── BlockedClient.js
+│   ├── Config.js
+│   ├── Movement.js
+│   ├── Service.js
+│   └── User.js
+│
 ├── middleware/
 │   └── auth.js                   # requireAuth, requireAdmin
 │
 ├── services/
-│   └── emailService.js           # Resend: 5 tipos de email
+│   └── emailService.js           # FROZEN — Resend, 5 email types
 │
 ├── utils/
-│   ├── validators.js             # CORREO_REGEX, CONTRASENA_REGEX
-│   ├── slots.js                  # Algoritmo de disponibilidad
-│   └── passwordUtils.js
+│   ├── mexicoTime.js             # getMexicoToday() — UTC-6 fixed offset
+│   ├── normalizePhone.js
+│   ├── passwordUtils.js
+│   ├── slots.js
+│   └── validators.js             # CORREO_REGEX, CONTRASENA_REGEX
 │
 ├── lib/
-│   └── mongoose.js               # Conexión cacheada (patrón serverless obligatorio)
+│   └── mongoose.js               # Cached connection — only connection point
 │
 ├── scripts/
+│   ├── cleanup-test-data.js      # Removes TEST QA FINAL data from prod
 │   └── createAdmin.js
 │
-├── public/
+├── tests/                        # Playwright test suite
+│   ├── smoke/                    # Non-destructive: homepage, services, nav, booking
+│   ├── e2e/                      # Non-destructive: auth flows, booking form, admin form
+│   ├── validation/               # Some WRITE: mutation tests, admin API, business logic
+│   ├── fixtures/                 # Custom Playwright fixtures (loginPage, bookingPage)
+│   ├── helpers/                  # Reusable navigation helpers
+│   └── utils/                    # Test data generators, date utilities
 │
-├── .env                          # No commitear
-├── .env.example                  # Sí commitear
-├── .gitignore
-├── package.json                  # Un solo package.json para todo
-├── pnpm-lock.yaml                # Commitear siempre
+├── public/
+├── .env                          # NEVER commit
+├── .env.example
+├── package.json                  # Single package.json for everything
+├── pnpm-lock.yaml                # Always commit
+├── playwright.config.ts
 ├── vercel.json
-├── vite.config.js
-├── index.html
+├── vite.config.js                # FROZEN — do not edit
+├── index.html                    # FROZEN — do not edit
 ├── ARCHITECTURE.md
 ├── ROADMAP.md
-└── AGENTS.md
+├── AGENTS.md
+├── FINAL_VALIDATION.md
+└── CLAUDE.md
 ```
+
+**Vercel Hobby plan limit: 12 functions.** Current count: exactly 12 (7 groups × ~2 files).  
+Adding new api groups risks hitting this limit.
 
 ---
 
-## Modelos de datos (MongoDB)
+## SPA Routing
 
-### User
-```
-nombre, telefono, correo (unique), contrasena (hashed bcrypt)
-rol: "cliente" | "admin"
-verificado: Boolean
-codigoVerificacion: String (6 dígitos, expira 15 min)
-listaNegraActiva: Boolean
-notas: String
-```
+The frontend uses **internal React state routing** — NOT URL-based routing.
 
-### Appointment
-```
-fecha: String "YYYY-MM-DD"
-hora: String "HH:MM AM/PM"
-servicios: [String]
-duracion: Number (minutos)
-precio: Number
-estado: "pendiente" | "confirmada" | "finalizada" | "cancelada"
-userId: ObjectId ref User (null para invitados)
-clienteNombre, clienteTelefono, clienteCorreo: String
-reagendada: Boolean (solo una vez)
-notasAdmin: String
+- All pages live at `/`
+- Navigation is driven by a `pagina` state variable in the root component
+- Deep links work because vercel.json rewrites all non-API paths to `/index.html`
+- Tests must navigate via button clicks, not `page.goto("/login")`
+
+```json
+// vercel.json — negative lookahead excludes /api/* from SPA rewrite
+{
+  "rewrites": [
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ]
+}
 ```
 
-### Config (singleton — clave: "global")
-```
-horarioPorDia: Map { "0"-"6" → { cerrado, inicio, fin } }
-diasBloqueados: [String]
-horasBloqueadasPorDia: Map
-diasAbiertosExcepcion: [String]
-diasCerrados: [Number]
-intervalo: Number (15 min, fijo)
-bufferMinutos: Number (30 min)
-heroImagen, serviciosHome, razonesHome
-```
-
-### Service
-```
-titulo, descripcion, imagen, precio, duracion, categoria
-```
-
-### Movement
-```
-tipo: "ingreso" | "egreso"
-monto: Number, descripcion: String
-fecha: "YYYY-MM-DD", hora: String
-esAutomatico: Boolean
-```
+The bare `/(.*) → /index.html` pattern would cache-poison the CDN for API routes. The negative lookahead prevents this.
 
 ---
 
-## API REST — Endpoints completos
+## Vercel Handler Pattern
 
-### Auth `/api/auth`
-| Método | Ruta | Acceso |
-|--------|------|--------|
-| POST | /registro | Público |
-| POST | /verificar-codigo | Público |
-| POST | /reenviar-codigo | Público |
-| POST | /login | Público |
-| POST | /olvide-contrasena | Público |
-| POST | /verificar-recuperacion | Público |
-| POST | /nueva-contrasena | Público |
-| GET | /sesion | requireAuth |
-
-### Appointments `/api/appointments`
-| Método | Ruta | Acceso |
-|--------|------|--------|
-| POST | / | Público |
-| GET | /occupied?fecha=YYYY-MM-DD | Público |
-| GET | /mias | requireAuth |
-| PATCH | /mias/:id | requireAuth |
-| GET | / | requireAdmin |
-| PATCH | /:id | requireAdmin |
-| DELETE | /:id | requireAdmin |
-
-### Services `/api/services`
-| Método | Ruta | Acceso |
-|--------|------|--------|
-| GET | / | Público |
-| POST | / | requireAdmin |
-| PATCH | /:id | requireAdmin |
-| DELETE | /:id | requireAdmin |
-
-### Config `/api/config`
-| Método | Ruta | Acceso |
-|--------|------|--------|
-| GET | / | Público |
-| PATCH | / | requireAdmin |
-
-### Users `/api/users`
-| Método | Ruta | Acceso |
-|--------|------|--------|
-| GET | / | requireAdmin |
-| PATCH | /:id | requireAdmin |
-| DELETE | /:id | requireAdmin |
-
-### Movements `/api/movements`
-| Método | Ruta | Acceso |
-|--------|------|--------|
-| GET | /?periodo=hoy\|semana\|mes | requireAdmin |
-| POST | / | requireAdmin |
-| DELETE | /:id | requireAdmin |
-
----
-
-## Middleware de autenticación
+Every `api/[group]/[[...path]].js` must follow this exact structure:
 
 ```js
-requireAuth   → verifica JWT en Authorization: Bearer <token>
-requireAdmin  → requireAuth + valida rol === "admin"
-// JWT payload: { id, rol, listaNegraActiva } — expira 7 días
+import { connectDB } from "../../lib/mongoose.js";
+import { requireAuth, requireAdmin } from "../../middleware/auth.js";
+import { getX, createX, updateX, deleteX } from "../../controllers/xController.js";
+
+export default async function handler(req, res) {
+  await connectDB();  // ALWAYS first
+
+  const path = req.url.replace(/^\/api\/group/, "").replace(/\?.*/, "");
+  const id   = path.match(/^\/([^/]+)$/)?.[1];
+  req.params = { id };  // attach for controller compatibility
+
+  // Specific routes BEFORE id catch-all
+  if (req.method === "GET" && path === "/specific") return specificHandler(req, res);
+
+  if (req.method === "GET"    && !id) return getX(req, res);
+  if (req.method === "POST"   && !id) return requireAdmin(req, res, () => createX(req, res));
+  if (req.method === "PATCH"  && id)  return requireAdmin(req, res, () => updateX(req, res));
+  if (req.method === "DELETE" && id)  return requireAdmin(req, res, () => deleteX(req, res));
+
+  res.status(405).json({ mensaje: "Método no permitido." });
+}
 ```
 
----
-
-## Algoritmo de disponibilidad
-
-1. Consulta citas del día (estado !== "cancelada")
-2. Convierte `"HH:MM AM/PM"` → minutos desde medianoche
-3. Detecta conflicto: `nuevaInicio < existFin && existInicio < nuevaFin`
-4. Conflicto → 409 | Lista negra → 403
-5. Crea cita → notifica admin por email (async, no bloquea respuesta)
-
-**Reglas cliente:** cancelar >1h antes · reagendar >3h antes · reagendar solo 1 vez
+Query strings: `new URL(req.url, "http://localhost").searchParams.get("fecha")` — not `req.query`.
 
 ---
 
-## Patrón conexión MongoDB para serverless
+## MongoDB Cached Connection
 
 ```js
-// lib/mongoose.js — único punto de conexión, nunca llamar mongoose.connect() directamente
+// lib/mongoose.js — only file that calls mongoose.connect()
 import mongoose from "mongoose";
 let cached = global.mongoose ?? { conn: null, promise: null };
 global.mongoose = cached;
@@ -262,48 +213,289 @@ export async function connectDB() {
 }
 ```
 
+Model guard pattern (required to prevent "Cannot overwrite model" on warm invocations):
+
+```js
+export default mongoose.models.User || mongoose.model("User", schema);
+```
+
+**Atlas M0 constraints:** no replica set transactions, no `$lookup` on large collections, max 100 connections.
+
 ---
 
-## Variables de entorno (raíz del proyecto)
+## Data Models
+
+### User
+```
+nombre, telefono, correo (unique), contrasena (bcrypt hashed)
+rol: "cliente" | "admin"
+verificado: Boolean (false until email code confirmed)
+codigoVerificacion: String (6-digit, expires 15 min)
+codigoExpira: Date
+listaNegraActiva: Boolean
+notas: String
+```
+
+### Appointment
+```
+fecha: "YYYY-MM-DD"
+hora: "H:MM AM/PM"  (e.g. "3:00 PM", "10:00 AM")
+servicios: [String]  (service names)
+duracion: Number (minutes, integer > 0)
+precio: Number
+estado: "pendiente" | "confirmada" | "finalizada" | "cancelada"
+userId: ObjectId | null  (null for guest bookings)
+clienteNombre, clienteTelefono, clienteCorreo: String
+notasAdmin: String
+reagendada: Boolean  (client can reschedule only once)
+```
+
+### Config (singleton — clave: "global")
+```
+horarioPorDia: Map { "0"–"6" → { inicio: Number, fin: Number, cerrado: Boolean } }
+diasBloqueados: [String "YYYY-MM-DD"]
+horasBloqueadasPorDia: Map { "YYYY-MM-DD" → [String "H:MM AM/PM"] }
+diasAbiertosExcepcion: [String "YYYY-MM-DD"]
+intervalo: Number (15, fixed)
+bufferMinutos: Number (default 30)
+heroImagen: String
+serviciosHome: [ObjectId]
+razonesHome: [Object]
+```
+
+### Service
+```
+titulo, descripcion, imagen
+precio: Number
+duracion: Number (min 5 minutes)
+categoria: String
+activo: Boolean
+oferta: Boolean
+precioOferta: Number
+```
+
+### Movement
+```
+tipo: "ingreso" | "egreso"
+monto: Number
+descripcion: String
+fecha: "YYYY-MM-DD"
+hora: String
+esAutomatico: Boolean  (true when auto-created on appointment finalization)
+citaId: ObjectId | null
+```
+
+### BlockedClient
+```
+telefono: String (unique, normalized)
+motivo: String
+activo: Boolean
+creadoPor: ObjectId
+```
+
+---
+
+## API Endpoints
+
+### Auth — `/api/auth`
+| Method | Path | Access |
+|--------|------|--------|
+| POST | /registro | Public |
+| POST | /verificar-codigo | Public |
+| POST | /reenviar-codigo | Public |
+| POST | /login | Public — rate-limited (20/15min) |
+| POST | /olvide-contrasena | Public |
+| POST | /verificar-recuperacion | Public |
+| POST | /nueva-contrasena | Public |
+| GET | /me | requireAuth |
+
+Note: route is `/me`, not `/sesion`. ARCHITECTURE.md previously had this wrong.
+
+### Appointments — `/api/appointments`
+| Method | Path | Access |
+|--------|------|--------|
+| POST | / | **Public** — any visitor can book |
+| GET | /occupied?fecha=YYYY-MM-DD | Public |
+| GET | /mias | requireAuth |
+| GET | /auto-finalizar | requireAdmin |
+| PATCH | /mias/:id | requireAuth (own only) |
+| GET | / | requireAdmin |
+| PATCH | /:id | requireAdmin |
+| DELETE | /:id | requireAdmin |
+
+Route order is critical: `/occupied`, `/mias`, `/auto-finalizar` must be checked BEFORE `/:id` to prevent shadowing.
+
+### Services — `/api/services`
+| Method | Path | Access |
+|--------|------|--------|
+| GET | / | Public |
+| POST | / | requireAdmin |
+| PATCH | /:id | requireAdmin |
+| DELETE | /:id | requireAdmin |
+
+### Config — `/api/config`
+| Method | Path | Access |
+|--------|------|--------|
+| GET | / | Public |
+| PATCH | / | requireAdmin |
+
+### Users — `/api/users`
+| Method | Path | Access |
+|--------|------|--------|
+| GET | / | requireAdmin |
+| PATCH | /:id | requireAdmin |
+| DELETE | /:id | requireAdmin |
+
+### Movements — `/api/movements`
+| Method | Path | Access |
+|--------|------|--------|
+| GET | /?periodo=hoy\|semana\|mes | requireAdmin |
+| POST | / | requireAdmin |
+| DELETE | /:id | requireAdmin |
+
+### Blocked Clients — `/api/blocked-clients`
+| Method | Path | Access |
+|--------|------|--------|
+| GET | / | requireAdmin |
+| POST | / | requireAdmin |
+| PATCH | /:id | requireAdmin (toggle activo) |
+| DELETE | /:id | requireAdmin |
+
+**Note:** blocked-clients controller returns `{ ok: true, data: [...] }` — this deviates from the standard `{ blockedClients }` convention. All other endpoints follow the standard.
+
+---
+
+## API Response Standards
+
+```js
+// Success
+res.json({ appointment })          // singular resource
+res.json({ appointments })         // array
+res.status(201).json({ service })  // created
+
+// Errors — always Spanish, always period at end, always "mensaje" key
+res.status(400).json({ mensaje: "Faltan campos requeridos." })
+res.status(401).json({ mensaje: "No autorizado." })
+res.status(403).json({ mensaje: "Acceso denegado." })
+res.status(404).json({ mensaje: "No encontrado." })
+res.status(405).json({ mensaje: "Método no permitido." })
+res.status(409).json({ mensaje: "Este horario ya no está disponible." })
+res.status(500).json({ mensaje: "Error interno del servidor." })
+```
+
+---
+
+## Authentication Flow
+
+1. `POST /api/auth/registro` → creates User (verificado: false), sends 6-digit code via Resend
+   - If Resend fails in production: user is deleted, 500 returned (no orphaned unverified users)
+2. `POST /api/auth/verificar-codigo` → sets verificado: true, returns JWT
+3. `POST /api/auth/login` → unverified users get 403 with `{ requiereVerificacion: true, correo }`
+4. JWT payload: `{ id, rol, listaNegraActiva }`, 7-day expiry
+5. All protected routes: `Authorization: Bearer <token>` header
+
+---
+
+## Booking Conflict Algorithm
+
+```js
+function hayConflicto(citasDelDia, nuevaInicio, nuevaFin, bufferMin, excluirId) {
+  return citasDelDia.some((c) => {
+    const existInicio = horaAMinutos(c.hora);
+    const existFin    = existInicio + c.duracion;
+    return nuevaInicio < (existFin + bufferMin) && existInicio < (nuevaFin + bufferMin);
+  });
+}
+```
+
+Each appointment occupies `[start, end + buffer)`. Two bookings conflict if their padded windows overlap.
+
+Config-driven guards (in order):
+1. `diasBloqueados` → 400 "El negocio está cerrado ese día."
+2. `diasAbiertosExcepcion` → overrides cerrado weekday
+3. `horarioPorDia[dayOfWeek].cerrado` → 400 "El negocio está cerrado ese día."
+4. Outside `inicio`/`fin` hours → 400 "La cita es antes del horario de apertura."
+5. `horasBloqueadasPorDia[fecha]` → 400 "Este horario no está disponible."
+6. `hayConflicto()` → 409 "Este horario ya no está disponible."
+7. Phone in BlockedClient (activo: true) → 403
+
+---
+
+## Mexico Timezone
+
+Mexico City is permanently UTC-6 since 2023 (no daylight saving).  
+All date comparisons use `getMexicoToday()` from `utils/mexicoTime.js` to prevent "past date" false positives from UTC offset.
+
+---
+
+## Email Notifications (Resend)
+
+All emails are fire-and-forget — never await in handlers:
+
+```js
+enviarNotificacionAdmin(appointment).catch((err) =>
+  console.error("Error:", err.message)
+);
+```
+
+Email types: verification code, password recovery code, new booking (admin), cancellation (client), rescheduling (client).
+
+---
+
+## Environment Variables
 
 ```env
 MONGO_URI=mongodb+srv://...
-JWT_SECRET=cadena_aleatoria_minimo_32_chars
+JWT_SECRET=minimum-32-char-random-string
 RESEND_API_KEY=re_xxxx
 EMAIL_FROM=Blanca Ríos Estudio <noreply@blancariosestudio.com>
 FRONTEND_URL=https://blancariosestudio.com
-ADMIN_EMAIL=correo_de_blanca@gmail.com
-ADMIN_PASSWORD=contraseña_admin_inicial
+ADMIN_EMAIL=blancariosestudio@gmail.com
+ADMIN_PASSWORD=...
 ```
 
-Variables `VITE_` son accesibles en el cliente. Las demás solo en serverless.
+`VITE_` prefix = accessible in client bundle. All others = server-only.
 
 ---
 
-## vercel.json final
-
-```json
-{
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
-}
-```
-
-Vercel detecta `/api` como Functions automáticamente.
-
----
-
-## Desarrollo local
+## Development Workflow
 
 ```bash
 pnpm install
-pnpm vercel dev    # frontend + functions en localhost:3000
+pnpm vercel dev        # localhost:3000 — frontend + functions unified
+pnpm build             # Vite production build only
+pnpm test:e2e:smoke    # non-destructive tests (safe)
+pnpm test:e2e:validate # mutation tests (creates test data)
+pnpm test:cleanup      # remove TEST QA FINAL data from prod DB
 ```
 
-## Runtime
-- Node.js 22 LTS
+Local dev requires `.env.local` with all environment variables. Vercel CLI reads it automatically.
 
-"engines": {
-  "node": ">=22"
-}
+---
+
+## Deployment
+
+```bash
+pnpm vercel deploy --prod
+```
+
+Vercel auto-detects `api/` as Functions. No explicit function configuration needed in vercel.json.
+
+---
+
+## Testing Infrastructure
+
+| Suite | Location | Mutates DB | Notes |
+|-------|----------|-----------|-------|
+| Smoke | `tests/smoke/` | No | Homepage, nav, services, booking page |
+| E2E | `tests/e2e/` | No | Auth forms, booking flow, protected routes |
+| Auth validation | `tests/validation/auth-flow.spec.ts` | Minimal | Registration validation, login errors |
+| Booking mutation | `tests/validation/booking-mutation.spec.ts` | **Yes** | Creates real appointments |
+| Admin panel | `tests/validation/admin-panel.spec.ts` | **Yes (CRUD)** | Requires `TEST_ADMIN_EMAIL` + `TEST_ADMIN_PASSWORD` env vars |
+| Business logic | `tests/validation/business-logic.spec.ts` | Some | Conflict/buffer tests create appointments |
+
+Run after mutation tests: `MONGO_URI=... pnpm test:cleanup`
+
+All mutation test data uses `"TEST QA FINAL"` marker and `playwright-*@example.invalid` emails for safe bulk deletion.
+
+See `FINAL_VALIDATION.md` for complete validation status and human-only flows.

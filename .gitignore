@@ -1,9 +1,50 @@
+# Dependencies
 node_modules/
-.env
+
+# Build output
 dist/
 build/
-.DS_Store
+
+# Environment — never commit secrets
+.env
+.env.local
+.env.*.local
+.env.production
+
+# Vercel
 .vercel
-.env*.local
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+
+# IDE
+.idea/
+.vscode/settings.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Playwright test artifacts
 test-results/
 playwright-report/
+playwright/.cache/
+blob-report/
+
+# AI / Claude Code local runtime
+.claude/settings.local.json
+.aider*
+.cursor/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Lock files — only pnpm-lock.yaml is allowed
+package-lock.json
+yarn.lock
