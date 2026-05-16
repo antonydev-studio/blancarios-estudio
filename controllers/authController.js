@@ -279,13 +279,5 @@ export async function nuevaContrasena(req, res) {
 
 // ── Verificar sesión activa ───────────────────────────────────────────────────
 export async function verificarSesion(req, res) {
-  try {
-    const usuario = await User.findById(req.usuario.id);
-    if (!usuario) {
-      return res.status(404).json({ mensaje: "Usuario no encontrado." });
-    }
-    res.json({ usuario });
-  } catch (err) {
-    res.status(500).json({ mensaje: "Error interno del servidor." });
-  }
+  res.json({ usuario: req.usuario });
 }
