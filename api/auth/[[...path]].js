@@ -1,5 +1,6 @@
 import { connectDB } from "../../lib/mongoose.js";
 import { requireAuth } from "../../middleware/auth.js";
+import { checkRateLimit, getClientIp } from "../../lib/rateLimit.js";
 import {
   registro,
   verificarCodigo,
@@ -11,30 +12,15 @@ import {
   verificarSesion,
 } from "../../controllers/authController.js";
 
-// In-memory rate limiter — provides protection within a single warm Vercel
-// function instance. Does not persist across cold starts or concurrent instances.
-// For full cross-instance protection, replace with Vercel KV-backed middleware.
-const RATE_MAP = new Map();
-const RATE_WINDOW_MS = 15 * 60 * 1000; // 15 min
-const RATE_MAX = 20; // max attempts per endpoint per IP per window
-
-function isRateLimited(ip, endpoint) {
-  const key = `${ip}:${endpoint}`;
-  const now = Date.now();
-  const hits = (RATE_MAP.get(key) ?? []).filter((t) => now - t < RATE_WINDOW_MS);
-  if (hits.length >= RATE_MAX) return true;
-  hits.push(now);
-  RATE_MAP.set(key, hits);
-  // Evict stale entries when map grows large to prevent unbounded memory use
-  if (RATE_MAP.size > 5000) {
-    for (const [k, v] of RATE_MAP) {
-      if (v.every((t) => now - t > RATE_WINDOW_MS)) RATE_MAP.delete(k);
-    }
-  }
-  return false;
-}
-
-const RATE_LIMITED_PATHS = new Set(["/login", "/verificar-codigo", "/verificar-recuperacion", "/nueva-contrasena"]);
+// Rate limit configs — Redis-backed, serverless-safe.
+// Falls open (allows request) if UPSTASH_REDIS_REST_URL is not set.
+const RATE_CONFIGS = {
+  "/login":                  { key: "login",          requests: 20, window: "1 h" },
+  "/olvide-contrasena":      { key: "forgot-pwd",     requests:  5, window: "1 h" },
+  "/verificar-codigo":       { key: "verify-code",    requests: 10, window: "1 h" },
+  "/verificar-recuperacion": { key: "verify-recovery",requests: 10, window: "1 h" },
+  "/nueva-contrasena":       { key: "new-password",   requests: 10, window: "1 h" },
+};
 
 export default async function handler(req, res) {
   await connectDB();
@@ -44,10 +30,11 @@ export default async function handler(req, res) {
   const path = url.pathname.replace(/^\/api\/auth/, "").replace(/\/$/, "") || "/";
 
   // Rate limit brute-force-sensitive endpoints
-  if (req.method === "POST" && RATE_LIMITED_PATHS.has(path)) {
-    const ip = (req.headers["x-forwarded-for"] ?? "").split(",")[0].trim() || "unknown";
-    if (isRateLimited(ip, path)) {
-      return res.status(429).json({ mensaje: "Demasiados intentos. Espera 15 minutos e intenta de nuevo." });
+  if (req.method === "POST" && RATE_CONFIGS[path]) {
+    const ip = getClientIp(req);
+    const { limited } = await checkRateLimit(ip, RATE_CONFIGS[path]);
+    if (limited) {
+      return res.status(429).json({ mensaje: "Demasiados intentos. Espera un momento e intenta de nuevo." });
     }
   }
 

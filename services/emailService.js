@@ -17,6 +17,7 @@ function esc(s) {
 // Si no tienes dominio propio, usa "onboarding@resend.dev" solo para pruebas
 // (Resend solo envía a tu propio correo en modo sandbox).
 const FROM = process.env.EMAIL_FROM ?? "Blanca Ríos Estudio <noreply@blancariosestudio.com>";
+const FRONTEND_URL = process.env.FRONTEND_URL ?? "https://blancariosestudio.com";
 
 export async function enviarCodigoVerificacion(correo, nombre, codigo) {
   const { error } = await resend.emails.send({
@@ -95,7 +96,7 @@ export async function enviarNotificacionAdmin(cita) {
         </table>
 
         <div style="margin-top:28px;text-align:center">
-          <a href="https://blancariosestudio.com"
+          <a href="${FRONTEND_URL}"
              style="display:inline-block;background:#c9a96e;color:#1a1614;
                     text-decoration:none;font-weight:700;font-size:13px;
                     padding:12px 28px;border-radius:999px;letter-spacing:0.5px">
@@ -168,7 +169,7 @@ export async function enviarNotificacionCancelacion(cita) {
         </table>
 
         <div style="margin-top:28px;text-align:center">
-          <a href="https://blancariosestudio.com"
+          <a href="${FRONTEND_URL}"
              style="display:inline-block;background:#c9a96e;color:#1a1614;
                     text-decoration:none;font-weight:700;font-size:13px;
                     padding:12px 28px;border-radius:999px;letter-spacing:0.5px">
@@ -243,7 +244,7 @@ export async function enviarNotificacionReagendamiento(cita) {
         </table>
 
         <div style="margin-top:28px;text-align:center">
-          <a href="https://blancariosestudio.com"
+          <a href="${FRONTEND_URL}"
              style="display:inline-block;background:#c9a96e;color:#1a1614;
                     text-decoration:none;font-weight:700;font-size:13px;
                     padding:12px 28px;border-radius:999px;letter-spacing:0.5px">

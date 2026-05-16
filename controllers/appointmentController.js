@@ -249,10 +249,13 @@ export async function getAllAppointments(req, res) {
     const filtro = fecha ? { fecha } : {};
     const raw = await Appointment.find(filtro).sort({ fecha: 1, hora: 1 }).lean();
     const ahora = new Date();
+
+    const toFinalize = [];
     const appointments = raw.map((cita) => {
       if (cita.estado === "cancelada") return cita;
       const citaDate = parsearCitaDateTime(cita.fecha, cita.hora);
       if (citaDate <= ahora && cita.estado !== "finalizada") {
+        toFinalize.push(cita._id);
         return { ...cita, estado: "finalizada" };
       }
       if (citaDate > ahora && cita.estado === "finalizada") {
@@ -260,6 +263,15 @@ export async function getAllAppointments(req, res) {
       }
       return cita;
     });
+
+    // Persist finalizada transitions to DB asynchronously (non-blocking)
+    if (toFinalize.length > 0) {
+      Appointment.updateMany(
+        { _id: { $in: toFinalize } },
+        { $set: { estado: "finalizada" } }
+      ).catch((err) => console.error("Error persistiendo estado finalizada:", err.message));
+    }
+
     res.json({ appointments });
   } catch {
     res.status(500).json({ mensaje: "Error al obtener citas." });
@@ -276,6 +288,26 @@ export async function updateAppointment(req, res) {
     const anterior = await Appointment.findById(req.params.id).lean();
     if (!anterior) {
       return res.status(404).json({ mensaje: "Cita no encontrada." });
+    }
+
+    // If admin changes fecha or hora, verify no conflict with existing bookings
+    if (req.body.fecha !== undefined || req.body.hora !== undefined) {
+      const nuevaFecha   = req.body.fecha    ?? anterior.fecha;
+      const nuevaHora    = req.body.hora     ?? anterior.hora;
+      const nuevaDuracion = req.body.duracion ?? anterior.duracion ?? 0;
+
+      const [cfg, citasDelDia] = await Promise.all([
+        Config.findOne({ clave: "global" }).lean(),
+        Appointment.find({ fecha: nuevaFecha, estado: { $nin: ["cancelada"] } }).select("hora duracion _id"),
+      ]);
+
+      const bufferMin  = cfg?.bufferMinutos ?? 0;
+      const nuevaInicio = horaAMinutos(nuevaHora);
+      const nuevaFin    = nuevaInicio + nuevaDuracion;
+
+      if (hayConflicto(citasDelDia, nuevaInicio, nuevaFin, bufferMin, req.params.id)) {
+        return res.status(409).json({ mensaje: "Ese horario ya está ocupado. Elige otro." });
+      }
     }
 
     const appointment = await Appointment.findByIdAndUpdate(

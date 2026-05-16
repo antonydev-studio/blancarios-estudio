@@ -1,5 +1,6 @@
 import { connectDB } from "../../lib/mongoose.js";
 import { requireAuth, requireAdmin } from "../../middleware/auth.js";
+import { checkRateLimit, getClientIp } from "../../lib/rateLimit.js";
 import {
   createAppointment,
   getMisAppointments,
@@ -26,8 +27,15 @@ export default async function handler(req, res) {
   if (miasId) req.params = { id: miasId };
   else if (id) req.params = { id };
 
-  // POST /  — public booking
-  if (req.method === "POST" && path === "/") return createAppointment(req, res);
+  // POST /  — public booking (rate limited: 5/hour/IP)
+  if (req.method === "POST" && path === "/") {
+    const ip = getClientIp(req);
+    const { limited } = await checkRateLimit(ip, { key: "booking", requests: 5, window: "1 h" });
+    if (limited) {
+      return res.status(429).json({ mensaje: "Demasiadas solicitudes. Espera un momento e intenta de nuevo." });
+    }
+    return createAppointment(req, res);
+  }
 
   // GET specific named routes — MUST come before /:id catch-all
   if (req.method === "GET" && path === "/occupied")        return getOccupiedSlots(req, res);

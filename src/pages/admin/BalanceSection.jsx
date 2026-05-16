@@ -154,6 +154,7 @@ export default function BalanceSection({ citas, movimientos, setMovimientos }) {
   };
 
   const eliminarMovimiento = async (id) => {
+    if (!window.confirm("¿Eliminar este movimiento? Esta acción no se puede deshacer.")) return;
     try {
       await api.deleteMovement(id);
       setMovimientos((prev) => prev.filter((m) => m.id !== id));

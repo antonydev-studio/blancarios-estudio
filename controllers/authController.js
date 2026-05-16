@@ -5,6 +5,10 @@ import Appointment from "../models/Appointment.js";
 import { enviarCodigoVerificacion, enviarCodigoRecuperacion } from "../services/emailService.js";
 import { CONTRASENA_REGEX, CORREO_REGEX } from "../utils/validators.js";
 
+if (process.env.NODE_ENV === "production" && (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32)) {
+  console.error("⛔ CRITICAL: JWT_SECRET is missing or too short (< 32 chars). Set a strong secret in Vercel env vars.");
+}
+
 function generarToken(usuario) {
   return jwt.sign(
     { id: usuario._id, rol: usuario.rol, listaNegraActiva: usuario.listaNegraActiva ?? false },
@@ -60,14 +64,8 @@ export async function registro(req, res) {
       await enviarCodigoVerificacion(correo, nombre, codigo);
     } catch (emailErr) {
       console.error("Error enviando correo de verificación:", emailErr);
-      console.error("EMAIL_USER:", process.env.EMAIL_USER);
-      // Fallback de desarrollo: imprimir el código en consola
-      console.log(`[DEV] Código de verificación para ${correo}: ${codigo}`);
-      // Si falla el envío de correo en producción, eliminar usuario y retornar error
-      if (process.env.NODE_ENV === "production") {
-        await User.findByIdAndDelete(usuario._id);
-        return res.status(500).json({ mensaje: "No se pudo enviar el correo de verificación." });
-      }
+      await User.findByIdAndDelete(usuario._id);
+      return res.status(500).json({ mensaje: "No se pudo enviar el correo de verificación." });
     }
 
     res.status(201).json({ mensaje: "Código enviado", correo });
@@ -135,7 +133,6 @@ export async function reenviarCodigo(req, res) {
       await enviarCodigoVerificacion(correo, usuario.nombre, codigo);
     } catch (emailErr) {
       console.error("Error reenviando correo:", emailErr);
-      console.log(`[DEV] Código reenviado para ${correo}: ${codigo}`);
       return res.status(500).json({ mensaje: "No se pudo enviar el código. Intenta de nuevo." });
     }
 
@@ -205,7 +202,6 @@ export async function olvidéContrasena(req, res) {
       await enviarCodigoRecuperacion(correo, usuario.nombre, codigo);
     } catch (emailErr) {
       console.error("Error enviando correo de recuperación:", emailErr);
-      console.log(`[DEV] Código de recuperación para ${correo}: ${codigo}`);
     }
 
     res.json({ mensaje: "Si ese correo existe, recibirás un código." });
