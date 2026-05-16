@@ -17,7 +17,10 @@ function esc(s) {
 // Si no tienes dominio propio, usa "onboarding@resend.dev" solo para pruebas
 // (Resend solo envía a tu propio correo en modo sandbox).
 const FROM = process.env.EMAIL_FROM ?? "Blanca Ríos Estudio <noreply@blancariosestudio.com>";
-const FRONTEND_URL = process.env.FRONTEND_URL ?? "https://blancariosestudio.com";
+const _rawFrontendUrl = process.env.FRONTEND_URL ?? "";
+const FRONTEND_URL = _rawFrontendUrl && !_rawFrontendUrl.includes("localhost")
+  ? _rawFrontendUrl
+  : "https://blancariosestudio.com";
 
 export async function enviarCodigoVerificacion(correo, nombre, codigo) {
   const { error } = await resend.emails.send({
