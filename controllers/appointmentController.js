@@ -10,6 +10,7 @@ import {
   enviarNotificacionAdmin,
   enviarNotificacionCancelacion,
   enviarNotificacionReagendamiento,
+  enviarConfirmacionCliente,
 } from "../services/emailService.js";
 
 // ── Helpers de movimientos automáticos ───────────────────────────────────────
@@ -193,6 +194,11 @@ export async function createAppointment(req, res) {
     enviarNotificacionAdmin(appointment).catch((err) =>
       console.error("Error enviando notificación al admin:", err.message)
     );
+    if (appointment.clienteCorreo) {
+      enviarConfirmacionCliente(appointment).catch((err) =>
+        console.error("Error enviando confirmación al cliente:", err.message)
+      );
+    }
     res.status(201).json({ appointment });
   } catch (err) {
     if (err.code === 11000) {

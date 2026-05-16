@@ -149,7 +149,14 @@ export default function AgendarCitaPage({ onVolverInicio, onLoginClick, onCitaCo
           return;
         }
         recargarCitas();
-        onCitaConfirmada?.();
+        onCitaConfirmada?.({
+          servicios:       citaAReagendar.servicios,
+          fecha:           fechaISO(fechaSeleccionada),
+          hora:            horaSeleccionada,
+          clienteNombre:   nombre,
+          clienteCorreo:   correo,
+          clienteTelefono: telefono,
+        });
       } catch {
         setError("No se pudo conectar con el servidor.");
       } finally {
@@ -220,7 +227,7 @@ export default function AgendarCitaPage({ onVolverInicio, onLoginClick, onCitaCo
         setError(data.mensaje || "No se pudo agendar la cita.");
         return;
       }
-      onCitaConfirmada?.();
+      onCitaConfirmada?.(payload);
     } catch (err) {
       console.error(err);
       setError("No se pudo conectar con el servidor.");

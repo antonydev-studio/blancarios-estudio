@@ -42,12 +42,12 @@ function validarFormulario({ nombre, telefono, correo, contrasena, confirmar }) 
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function RegistroPage({ onVolverInicio, onIrLogin }) {
+export default function RegistroPage({ onVolverInicio, onIrLogin, initialNombre = "", initialTelefono = "", initialCorreo = "" }) {
   const { login } = useAuth();
 
-  const [nombre,     setNombre]     = useState("");
-  const [telefono,   setTelefono]   = useState("");
-  const [correo,     setCorreo]     = useState("");
+  const [nombre,     setNombre]     = useState(initialNombre);
+  const [telefono,   setTelefono]   = useState(initialTelefono);
+  const [correo,     setCorreo]     = useState(initialCorreo);
   const [contrasena, setContrasena] = useState("");
   const [confirmar,  setConfirmar]  = useState("");
   const [errores,    setErrores]    = useState({});

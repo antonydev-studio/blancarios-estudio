@@ -16,6 +16,7 @@ import ForgotPasswordPage      from "./pages/ForgotPasswordPage";
 import AppointmentHistoryPage  from "./pages/AppointmentHistoryPage";
 import AdminPage             from "./pages/admin/AdminPage";
 import NotFoundPage          from "./pages/NotFoundPage";
+import BookingSuccessPage    from "./pages/BookingSuccessPage";
 import { AdminDataProvider } from "./hooks/useAdminData";
 
 // ─── Páginas disponibles ──────────────────────────────────────────────────
@@ -27,6 +28,7 @@ const PAGINAS = {
   OLVIDE_CONTRASENA: "olvideContrasena",
   HISTORIAL:         "historial",
   ADMIN:             "admin",
+  CONFIRMACION:      "confirmacion",
 };
 
 // ─── Router interno ───────────────────────────────────────────────────────
@@ -34,6 +36,8 @@ function Router() {
   const [pagina, setPagina] = useState(PAGINAS.HOME);
   const [mensajeExito, setMensajeExito] = useState("");
   const [citaAReagendar, setCitaAReagendar] = useState(null);
+  const [citaConfirmadaData, setCitaConfirmadaData] = useState(null);
+  const [datosPrellenados, setDatosPrellenados] = useState(null);
   const { usuario, logout } = useAuth();
 
   const irA = (destino) => setPagina(destino);
@@ -108,15 +112,11 @@ const bannerExito = mensajeExito ? (
           onVolverInicio={volverDeAgendar}
           onLoginClick={()     => irA(PAGINAS.LOGIN)}
           citaAReagendar={citaAReagendar}
-          onCitaConfirmada={() => {
+          onCitaConfirmada={(citaData) => {
             const eraReagendo = !!citaAReagendar;
             setCitaAReagendar(null);
-            setMensajeExito(eraReagendo
-              ? "¡Tu cita ha sido reagendada correctamente!"
-              : "¡Tu cita ha sido agendada correctamente!"
-            );
-            irA(eraReagendo ? PAGINAS.HISTORIAL : PAGINAS.HOME);
-            setTimeout(() => setMensajeExito(""), 5000);
+            setCitaConfirmadaData({ ...citaData, eraReagendado: eraReagendo });
+            irA(PAGINAS.CONFIRMACION);
           }}
         />
       );
@@ -128,8 +128,25 @@ const bannerExito = mensajeExito ? (
           onVolverInicio={()     => irA(PAGINAS.HOME)}
           onLoginAdmin={()       => irA(PAGINAS.ADMIN)}
           onLoginCliente={()     => irA(PAGINAS.HISTORIAL)}
-          onIrARegistro={()      => irA(PAGINAS.REGISTRO)}
+          onIrARegistro={() => { setDatosPrellenados(null); irA(PAGINAS.REGISTRO); }}
           onOlvideContrasena={() => irA(PAGINAS.OLVIDE_CONTRASENA)}
+        />
+      );
+
+    case PAGINAS.CONFIRMACION:
+      return (
+        <BookingSuccessPage
+          citaData={citaConfirmadaData}
+          onVerMisCitas={() => irA(PAGINAS.HISTORIAL)}
+          onVolverInicio={() => irA(PAGINAS.HOME)}
+          onCrearCuenta={() => {
+            setDatosPrellenados({
+              nombre:   citaConfirmadaData?.clienteNombre   ?? "",
+              telefono: citaConfirmadaData?.clienteTelefono ?? "",
+              correo:   citaConfirmadaData?.clienteCorreo   ?? "",
+            });
+            irA(PAGINAS.REGISTRO);
+          }}
         />
       );
 
@@ -138,6 +155,9 @@ const bannerExito = mensajeExito ? (
         <RegistrationPage
           onVolverInicio={() => irA(PAGINAS.HOME)}
           onIrLogin={()      => irA(PAGINAS.LOGIN)}
+          initialNombre={datosPrellenados?.nombre   ?? ""}
+          initialTelefono={datosPrellenados?.telefono ?? ""}
+          initialCorreo={datosPrellenados?.correo   ?? ""}
         />
       );
 
