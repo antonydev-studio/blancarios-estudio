@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from "react";
 import { getHorarioDia } from "../../utils/slots";
+import { WHATSAPP_URL } from "../../config/constants";
 
 // ─── Helpers horario dinámico ──────────────────────────────────────────────
 
@@ -158,7 +159,7 @@ export default function Footer() {
 
             {/* WhatsApp */}
             <a
-              href="https://wa.me/527551313518?text=Hola,%20me%20contacto%20desde%20la%20página%20oficial%20y%20tengo%20una%20duda."
+              href={WHATSAPP_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="group/icon w-11 h-11 rounded-full border border-crema/25 hover:border-crema/60 flex items-center justify-center transition-colors"

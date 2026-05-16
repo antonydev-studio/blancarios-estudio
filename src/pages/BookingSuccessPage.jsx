@@ -2,9 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import Navbar from "../components/layout/Navbar";
 import Footer from "../components/layout/Footer";
-
-// Hardcoded — same as Footer. Update here if phone number changes.
-const WHATSAPP_URL = "https://wa.me/527551313518?text=Hola,%20me%20contacto%20desde%20la%20página%20oficial%20y%20tengo%20una%20duda.";
+import { WHATSAPP_URL } from "../config/constants";
 
 function formatearFecha(fechaStr) {
   if (!fechaStr) return "";
