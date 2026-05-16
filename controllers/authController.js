@@ -171,6 +171,15 @@ export async function login(req, res) {
       return res.status(401).json({ mensaje: "Correo o contraseña incorrectos." });
     }
 
+    // Link any orphaned guest appointments booked with this phone
+    if (usuario.telefono) {
+      const telefonoLimpio = usuario.telefono.replace(/\D/g, "");
+      await Appointment.updateMany(
+        { clienteTelefono: { $in: [telefonoLimpio, usuario.telefono] }, userId: null },
+        { userId: usuario._id }
+      );
+    }
+
     const token = generarToken(usuario);
     res.json({ token, usuario });
   } catch (err) {

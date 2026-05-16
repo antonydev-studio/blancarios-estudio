@@ -21,7 +21,7 @@ export async function createBlockedClient(req, res) {
     const blocked = await BlockedClient.create({
       telefono:  telefonoNormalizado,
       motivo:    motivo ?? "",
-      creadoPor: req.usuario.id,
+      creadoPor: req.usuario._id,
     });
     res.status(201).json({ ok: true, data: blocked });
   } catch (err) {

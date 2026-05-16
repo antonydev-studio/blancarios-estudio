@@ -212,9 +212,19 @@ export async function createAppointment(req, res) {
 // ── GET /api/appointments/mias — cliente autenticado ─────────────────────────
 export async function getMisAppointments(req, res) {
   try {
-    const appointments = await Appointment.find({
-      userId: new mongoose.Types.ObjectId(req.usuario.id),
-    }).sort({ fecha: -1, hora: -1 });
+    const userId = new mongoose.Types.ObjectId(req.usuario._id);
+
+    // Progressive linking: attach orphaned appointments booked with the same phone
+    const telefonoRaw = req.usuario.telefono ?? "";
+    if (telefonoRaw) {
+      const telefonoLimpio = telefonoRaw.replace(/\D/g, "");
+      await Appointment.updateMany(
+        { clienteTelefono: { $in: [telefonoLimpio, telefonoRaw] }, userId: null },
+        { userId }
+      );
+    }
+
+    const appointments = await Appointment.find({ userId }).sort({ fecha: -1, hora: -1 });
     res.json({ appointments });
   } catch {
     res.status(500).json({ mensaje: "Error al obtener citas." });
@@ -344,7 +354,7 @@ export async function patchClienteAppointment(req, res) {
 
     const cita = await Appointment.findOne({
       _id: req.params.id,
-      userId: req.usuario.id,
+      userId: req.usuario._id,
     });
     if (!cita) {
       return res.status(404).json({ mensaje: "Cita no encontrada." });
