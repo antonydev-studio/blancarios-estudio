@@ -4,6 +4,7 @@ import React from "react";
 import InputField from "../ui/InputField";
 import AdminFilterChip from "./AdminFilterChip";
 import { AppointmentTableRow, AppointmentMobileCard } from "./AppointmentRow";
+import { horaAMinutos } from "../../utils/slots.js";
 
 const filtros = [
   { id: "pendiente",  label: "Pendiente"  },
@@ -20,8 +21,12 @@ export default function AppointmentsTable({
   citasFiltradas,
   onSeleccionar,
 }) {
-  // Ordenar por fecha ascendente (más próximas primero)
-  const ordenadas = [...citasFiltradas].sort((a, b) => a.fecha.localeCompare(b.fecha) || a.hora.localeCompare(b.hora));
+  const citaMs = (c) => {
+    const [y, m, d] = c.fecha.split("-").map(Number);
+    return new Date(y, m - 1, d).getTime() + horaAMinutos(c.hora) * 60_000;
+  };
+  const desc = filtroEstado === "finalizada" || filtroEstado === "cancelada";
+  const ordenadas = [...citasFiltradas].sort((a, b) => desc ? citaMs(b) - citaMs(a) : citaMs(a) - citaMs(b));
 
   return (
     <div className="space-y-4">
