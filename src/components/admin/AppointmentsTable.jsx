@@ -25,8 +25,7 @@ export default function AppointmentsTable({
     const [y, m, d] = c.fecha.split("-").map(Number);
     return new Date(y, m - 1, d).getTime() + horaAMinutos(c.hora) * 60_000;
   };
-  const desc = filtroEstado === "finalizada" || filtroEstado === "cancelada";
-  const ordenadas = [...citasFiltradas].sort((a, b) => desc ? citaMs(b) - citaMs(a) : citaMs(a) - citaMs(b));
+  const ordenadas = [...citasFiltradas].sort((a, b) => citaMs(b) - citaMs(a));
 
   return (
     <div className="space-y-4">
