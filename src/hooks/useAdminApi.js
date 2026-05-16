@@ -2,7 +2,7 @@
 // Centraliza todos los fetch del panel admin.
 // Uso: const api = createAdminApi(getToken)
 
-export function createAdminApi(getToken) {
+export function createAdminApi(getToken, onUnauthorized = () => {}) {
   function headers() {
     return {
       "Content-Type": "application/json",
@@ -12,6 +12,10 @@ export function createAdminApi(getToken) {
 
   async function apiFetch(url, options = {}) {
     const res = await fetch(url, { ...options, headers: headers() });
+    if (res.status === 401) {
+      onUnauthorized();
+      throw new Error("No autorizado.");
+    }
     const data = await res.json();
     if (!res.ok) throw new Error(data.mensaje || "Error en la petición");
     return data;

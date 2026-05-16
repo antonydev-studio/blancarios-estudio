@@ -13,7 +13,7 @@ import ServicePickerSection from "../components/sections/ServicePickerSection";
 import ClientDataSection    from "../components/sections/ClientDataSection";
 
 export default function AgendarCitaPage({ onVolverInicio, onLoginClick, onCitaConfirmada, citaAReagendar }) {
-  const { usuario, getToken, recargarCitas, listaNegraActiva } = useAuth();
+  const { usuario, getToken, recargarCitas, listaNegraActiva, logout } = useAuth();
   const { clientes } = useAdminData();
   const hoy = useMemo(() => new Date(), []);
 
@@ -138,6 +138,7 @@ export default function AgendarCitaPage({ onVolverInicio, onLoginClick, onCitaCo
             reagendada: true,
           }),
         });
+        if (res.status === 401) { logout(); return; }
         const data = await res.json();
         if (res.status === 409) {
           setError("Ese horario ya no está disponible. Elige otro.");

@@ -72,15 +72,15 @@ export function AuthProvider({ children }) {
       const res = await fetch("/api/appointments/mias", {
         headers: { Authorization: `Bearer ${localStorage.getItem("token_br")}` },
       });
+      if (res.status === 401) {
+        logout();
+        return;
+      }
       const data = await res.json();
       if (!res.ok) throw new Error(data.mensaje || "Error al cargar citas");
       setCitas(data.appointments.map((a) => ({ ...a, id: a._id })));
     } catch (err) {
       console.error("Error cargando citas:", err);
-      if (err.message === "Token inválido o expirado.") {
-        logout();
-        return;
-      }
       setCitasError("No pudimos cargar tus citas. Intenta de nuevo.");
     } finally {
       setCitasCargando(false);

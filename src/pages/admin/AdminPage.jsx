@@ -15,7 +15,7 @@ import HomepageSection from "./HomepageSection";
 import BlockedClientsSection from "./BlockedClientsSection";
 
 export default function AdminPage({ onLogout, onVolverHome, onCitaCreada }) {
-  const { usuario, getToken } = useAuth();
+  const { usuario, getToken, logout } = useAuth();
   const {
     citas,
     setCitas,
@@ -40,8 +40,12 @@ export default function AdminPage({ onLogout, onVolverHome, onCitaCreada }) {
     fetch("/api/appointments/auto-finalizar", {
       headers: { Authorization: `Bearer ${getToken()}` },
     })
-      .then((r) => r.json())
+      .then((r) => {
+        if (r.status === 401) { logout(); return null; }
+        return r.json();
+      })
       .then((data) => {
+        if (!data) return;
         if (data.finalizadas > 0) recargarTodo();
       })
       .catch((err) => console.error("Error en auto-finalizar:", err));

@@ -19,7 +19,7 @@ export default function NewAppointmentDrawer({
   config,
   diasBloqueados = [],
 }) {
-  const { getToken } = useAuth();
+  const { getToken, logout } = useAuth();
 
   const hoy = useMemo(() => new Date(), []);
   const [mes, setMes]   = useState(() => new Date(hoy.getFullYear(), hoy.getMonth(), 1));
@@ -163,6 +163,7 @@ export default function NewAppointmentDrawer({
         },
         body: JSON.stringify(payload),
       });
+      if (res.status === 401) { logout(); return; }
       const data = await res.json();
       if (res.status === 409) {
         setErrores((prev) => ({ ...prev, hora: "Ese horario ya está ocupado" }));

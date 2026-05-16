@@ -22,8 +22,8 @@ export default function AppointmentDrawer({
   config,
   diasBloqueados = [],
 }) {
-  const { getToken } = useAuth();
-  const api = React.useMemo(() => createAdminApi(getToken), [getToken]);
+  const { getToken, logout } = useAuth();
+  const api = React.useMemo(() => createAdminApi(getToken, logout), [getToken, logout]);
 
   const cita = citas?.find((x) => x.id === citaId) ?? null;
   const [reprogAbierta, setReprogAbierta] = useState(false);

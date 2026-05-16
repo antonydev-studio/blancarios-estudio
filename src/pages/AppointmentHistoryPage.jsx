@@ -67,6 +67,7 @@ export default function HistorialCitasPage({ onVolverInicio, onAgendar, onLogout
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
         body: JSON.stringify({ estado: "cancelada" }),
       });
+      if (res.status === 401) { logout(); return; }
       const data = await res.json();
       if (!res.ok) { setErroresCitas((p) => ({ ...p, [cita._id]: data.mensaje })); return; }
       recargarCitas();

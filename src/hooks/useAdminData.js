@@ -20,8 +20,8 @@ function normalizarTelefonoWa(tel) {
 const AdminDataContext = createContext(null);
 
 export function AdminDataProvider({ children }) {
-  const { usuario, getToken } = useAuth();
-  const api = useMemo(() => createAdminApi(getToken), [getToken]);
+  const { usuario, getToken, logout } = useAuth();
+  const api = useMemo(() => createAdminApi(getToken, logout), [getToken, logout]);
 
   const [cargando,       setCargando]       = useState(true);
   const [errorCarga,     setErrorCarga]     = useState(null);
@@ -66,13 +66,7 @@ export function AdminDataProvider({ children }) {
       setDiasBloqueados(cfg.diasBloqueados ?? []);
     } catch (err) {
       console.error("Error cargando datos admin:", err);
-      if (
-        err.message?.includes("Token inválido") ||
-        err.message?.includes("No autorizado")
-      ) {
-        // Token expirado — AuthContext detectará el 401 y hará logout automático.
-        return;
-      }
+      if (err.message === "No autorizado.") return;
       setErrorCarga("No se pudieron cargar los datos. Verifica tu conexión e intenta recargar.");
     } finally {
       setCargando(false);
