@@ -104,7 +104,7 @@
 | No unit tests for slot algorithm | Medium | `utils/slots.js`, `appointmentController.hayConflicto` untested |
 | No seed script for dev data | Low | Admin must manually create services/config after fresh deploy |
 | Vercel Hobby function limit | Medium | At exactly 12/12 — new api groups require plan upgrade |
-| Human-only validation flows | Low | Email verification, appointment status changes — see FINAL_VALIDATION.md |
+| Human-only validation flows | Low | Email verification, appointment status changes (not automatable) |
 
 ---
 

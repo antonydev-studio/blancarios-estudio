@@ -35,8 +35,12 @@ playwright-report/
 playwright/.cache/
 blob-report/
 
-# AI / Claude Code local runtime
-.claude/settings.local.json
+# AI tooling — internal, never for public repo
+.claude/
+.agents/
+.skills/
+CLAUDE.md
+skills-lock.json
 .aider*
 .cursor/
 

@@ -71,7 +71,7 @@ barber-br/
 │   │   └── ui/
 │   ├── hooks/
 │   ├── context/
-│   │   └── AuthContext.jsx       # FROZEN — do not edit
+│   │   └── AuthContext.jsx
 │   └── utils/
 │       └── passwordUtils.js
 │
@@ -96,7 +96,7 @@ barber-br/
 │   └── auth.js                   # requireAuth, requireAdmin
 │
 ├── services/
-│   └── emailService.js           # FROZEN — Resend, 5 email types
+│   └── emailService.js           # Resend, 5 email types
 │
 ├── utils/
 │   ├── mexicoTime.js             # getMexicoToday() — UTC-6 fixed offset
@@ -127,13 +127,10 @@ barber-br/
 ├── pnpm-lock.yaml                # Always commit
 ├── playwright.config.ts
 ├── vercel.json
-├── vite.config.js                # FROZEN — do not edit
-├── index.html                    # FROZEN — do not edit
+├── vite.config.js
+├── index.html
 ├── ARCHITECTURE.md
-├── ROADMAP.md
-├── AGENTS.md
-├── FINAL_VALIDATION.md
-└── CLAUDE.md
+└── ROADMAP.md
 ```
 
 **Vercel Hobby plan limit: 12 functions.** Current count: exactly 12 (7 groups × ~2 files).  
@@ -308,8 +305,6 @@ creadoPor: ObjectId
 | POST | /verificar-recuperacion | Public |
 | POST | /nueva-contrasena | Public |
 | GET | /me | requireAuth |
-
-Note: route is `/me`, not `/sesion`. ARCHITECTURE.md previously had this wrong.
 
 ### Appointments — `/api/appointments`
 | Method | Path | Access |
@@ -497,5 +492,3 @@ Vercel auto-detects `api/` as Functions. No explicit function configuration need
 Run after mutation tests: `MONGO_URI=... pnpm test:cleanup`
 
 All mutation test data uses `"TEST QA FINAL"` marker and `playwright-*@example.invalid` emails for safe bulk deletion.
-
-See `FINAL_VALIDATION.md` for complete validation status and human-only flows.

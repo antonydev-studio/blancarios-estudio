@@ -62,7 +62,7 @@ TEST_ADMIN_EMAIL=... TEST_ADMIN_PASSWORD=... \
   pnpm playwright test tests/validation/admin-panel.spec.ts
 ```
 
-See `FINAL_VALIDATION.md` for full validation status and `ARCHITECTURE.md` for complete technical documentation.
+See `ARCHITECTURE.md` for complete technical documentation.
 
 ---
 
