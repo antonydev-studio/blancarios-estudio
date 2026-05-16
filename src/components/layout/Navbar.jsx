@@ -49,7 +49,7 @@ export default function Navbar({
     <button
       type="button"
       onClick={onInicio}
-      className="flex flex-col leading-none hover:opacity-80 transition-opacity"
+      className="flex flex-col leading-none shrink-0 hover:opacity-80 transition-opacity"
     >
       <span className="font-display italic text-base text-blanco-suave">
         Blanca Ríos
@@ -136,7 +136,7 @@ export default function Navbar({
         </nav>
 
         {/* ── Acciones del lado derecho ── */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 ml-auto shrink-0">
 
           {!estaLogueado && (
             // Sin sesión: Login + Agendar
@@ -145,7 +145,7 @@ export default function Navbar({
                 <button
                   type="button"
                   onClick={onLogin}
-                  className="btn-secondary"
+                  className="btn-secondary btn-navbar"
                 >
                   Iniciar Sesión
                 </button>
@@ -154,7 +154,7 @@ export default function Navbar({
                 <button
                   type="button"
                   onClick={onAgendar}
-                  className="btn-primary"
+                  className="btn-primary btn-navbar"
                 >
                   Agendar cita
                 </button>
@@ -168,7 +168,7 @@ export default function Navbar({
             <button
               type="button"
               onClick={onAdmin}
-              className="btn-primary flex items-center gap-2"
+              className="btn-primary btn-navbar flex items-center gap-2"
             >
               <svg
                 className="w-3.5 h-3.5 shrink-0"
@@ -195,7 +195,7 @@ export default function Navbar({
               <button
                 type="button"
                 onClick={onHistorial}
-                className="btn-secondary"
+                className="btn-secondary btn-navbar"
               >
                 Historial
               </button>
@@ -203,7 +203,7 @@ export default function Navbar({
                 <button
                   type="button"
                   onClick={onAgendar}
-                  className="btn-primary"
+                  className="btn-primary btn-navbar"
                 >
                   Agendar cita
                 </button>

@@ -179,6 +179,14 @@ a    { color: inherit; text-decoration: none; }
   &:active { scale: 0.98; }
 }
 
+/* Botón navbar — padding reducido en móvil para evitar desbordamiento */
+@utility btn-navbar {
+  padding-inline: 0.875rem;
+  @media (min-width: 640px) {
+    padding-inline: 1.5rem;
+  }
+}
+
 /* Botón ghost — solo texto */
 @utility btn-ghost {
   font-size: 0.875rem;
@@ -238,11 +246,20 @@ a    { color: inherit; text-decoration: none; }
 @utility navbar-inner {
   max-width: 72rem;
   margin-inline: auto;
-  padding-inline: 1rem;
+  padding-inline: 0.75rem;
   padding-block: 1rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.5rem;
+  @media (min-width: 640px) {
+    padding-inline: 1rem;
+    gap: 0;
+  }
+  @media (max-width: 359px) {
+    flex-wrap: wrap;
+    padding-block: 0.75rem;
+  }
 }
 
 /* Wrapper de sección */
