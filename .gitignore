@@ -52,3 +52,5 @@ pnpm-debug.log*
 # Lock files — only pnpm-lock.yaml is allowed
 package-lock.json
 yarn.lock
+ARCHITECTURE.md
+ROADMAP.md
