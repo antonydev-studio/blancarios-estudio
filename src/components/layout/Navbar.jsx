@@ -136,7 +136,7 @@ export default function Navbar({
         </nav>
 
         {/* ── Acciones del lado derecho ── */}
-        <div className="flex items-center gap-2 ml-auto shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
 
           {!estaLogueado && (
             // Sin sesión: Login + Agendar
