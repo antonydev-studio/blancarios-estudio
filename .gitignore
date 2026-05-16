@@ -40,6 +40,8 @@ blob-report/
 .agents/
 .skills/
 CLAUDE.md
+AGENTS.md
+FINAL_VALIDATION.md
 skills-lock.json
 .aider*
 .cursor/
