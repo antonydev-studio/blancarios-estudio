@@ -191,14 +191,27 @@ export async function createAppointment(req, res) {
       }
     }
 
-    enviarNotificacionAdmin(appointment).catch((err) =>
-      console.error("Error enviando notificación al admin:", err.message)
-    );
+    const emailJobs = [
+      {
+        label: "notificación al admin",
+        promise: enviarNotificacionAdmin(appointment),
+      },
+    ];
+
     if (appointment.clienteCorreo) {
-      enviarConfirmacionCliente(appointment).catch((err) =>
-        console.error("Error enviando confirmación al cliente:", err.message)
-      );
+      emailJobs.push({
+        label: "confirmación al cliente",
+        promise: enviarConfirmacionCliente(appointment),
+      });
     }
+
+    const emailResults = await Promise.allSettled(emailJobs.map((job) => job.promise));
+    emailResults.forEach((result, index) => {
+      if (result.status === "rejected") {
+        console.error(`Error enviando ${emailJobs[index].label}:`, result.reason?.message ?? result.reason);
+      }
+    });
+
     res.status(201).json({ appointment });
   } catch (err) {
     if (err.code === 11000) {

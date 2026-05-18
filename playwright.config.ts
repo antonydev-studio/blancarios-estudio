@@ -18,7 +18,7 @@ export default defineConfig({
   },
 
   use: {
-    baseURL: "https://blancarios-estudio.vercel.app",
+    baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "https://www.blancariosestudio.com",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
