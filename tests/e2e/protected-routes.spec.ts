@@ -75,7 +75,7 @@ test.describe("Protected Routes — API Authorization", () => {
 
   test("occupied appointments endpoint is publicly accessible (GET)", async ({ page }) => {
     const today = new Date().toISOString().split("T")[0];
-    const response = await page.request.get(`/api/appointments/occupied?fecha=${today}`);
+    const response = await page.request.get(`/api/appointments?action=occupied&fecha=${today}`);
     expect(response.status()).toBe(200);
     const json = await response.json();
     expect(json).toHaveProperty("horasOcupadas");

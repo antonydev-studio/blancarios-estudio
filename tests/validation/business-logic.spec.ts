@@ -264,7 +264,7 @@ test.describe.serial("Business Logic — Conflict + Buffer (WRITES)", () => {
 test.describe("Occupied Slots — API Structure", () => {
   test("GET /api/appointments/occupied — correct response shape", async ({ request }) => {
     const today = new Date().toISOString().split("T")[0];
-    const res = await request.get(`/api/appointments/occupied?fecha=${today}`);
+    const res = await request.get(`/api/appointments?action=occupied&fecha=${today}`);
     expect(res.status()).toBe(200);
     const j = await res.json();
     expect(j).toHaveProperty("horasOcupadas");
@@ -272,7 +272,7 @@ test.describe("Occupied Slots — API Structure", () => {
   });
 
   test("GET /api/appointments/occupied — no fecha param — handled gracefully", async ({ request }) => {
-    const res = await request.get("/api/appointments/occupied");
+    const res = await request.get("/api/appointments?action=occupied");
     // Should return 200 with empty/error, not crash the function
     expect([200, 400]).toContain(res.status());
   });

@@ -37,7 +37,7 @@ export default function AdminPage({ onLogout, onVolverHome, onCitaCreada }) {
 
   // Auto-finalizar citas pasadas al cargar el panel
   useEffect(() => {
-    fetch("/api/appointments/auto-finalizar", {
+    fetch("/api/appointments?action=auto-finalizar", {
       headers: { Authorization: `Bearer ${getToken()}` },
     })
       .then((r) => {

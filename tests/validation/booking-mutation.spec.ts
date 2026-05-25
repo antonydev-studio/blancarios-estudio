@@ -51,7 +51,7 @@ test.describe.serial("Booking Mutation — Real API", () => {
       const finHour = horario?.fin ?? 21;
 
       // Check occupied slots for this day
-      const occRes = await request.get(`/api/appointments/occupied?fecha=${d}`);
+      const occRes = await request.get(`/api/appointments?action=occupied&fecha=${d}`);
       const occupied: string[] = occRes.ok() ? (await occRes.json()).horasOcupadas ?? [] : [];
 
       // Try each hour slot from start+1 to end-2, prefer afternoon
@@ -100,7 +100,7 @@ test.describe.serial("Booking Mutation — Real API", () => {
   test("GET /api/appointments/occupied — reflects booked slot", async ({ request }) => {
     if (!createdId) test.skip(true, "Booking creation failed");
 
-    const res = await request.get(`/api/appointments/occupied?fecha=${testDate}`);
+    const res = await request.get(`/api/appointments?action=occupied&fecha=${testDate}`);
     expect(res.status()).toBe(200);
 
     const j = await res.json();

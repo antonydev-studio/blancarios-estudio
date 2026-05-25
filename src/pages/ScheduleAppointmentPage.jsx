@@ -83,7 +83,7 @@ export default function AgendarCitaPage({ onVolverInicio, onLoginClick, onCitaCo
     const citaId = citaAReagendar?._id || citaAReagendar?.id;
     const excludeParam = citaId ? `&excludeId=${encodeURIComponent(citaId)}` : "";
     setCargandoSlots(true);
-    fetch(`/api/appointments/occupied?fecha=${fechaStr}${excludeParam}`)
+    fetch(`/api/appointments?action=occupied&fecha=${fechaStr}${excludeParam}`)
       .then((r) => r.json())
       .then((data) => {
         setHorasOcupadas(data.horasOcupadas ?? []);
@@ -131,7 +131,7 @@ export default function AgendarCitaPage({ onVolverInicio, onLoginClick, onCitaCo
       const citaId = citaAReagendar._id || citaAReagendar.id;
       setCargando(true);
       try {
-        const res = await fetch(`/api/appointments/mias/${citaId}`, {
+        const res = await fetch(`/api/appointments?miasId=${encodeURIComponent(citaId)}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
           body: JSON.stringify({

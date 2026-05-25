@@ -69,7 +69,7 @@ export function AuthProvider({ children }) {
     setCitasCargando(true);
     setCitasError(null);
     try {
-      const res = await fetch("/api/appointments/mias", {
+      const res = await fetch("/api/appointments?action=mias", {
         headers: { Authorization: `Bearer ${localStorage.getItem("token_br")}` },
       });
       if (res.status === 401) {

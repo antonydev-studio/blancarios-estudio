@@ -58,7 +58,7 @@ export default function NewAppointmentDrawer({
   const [citasOcupadas, setCitasOcupadas] = useState([]);
 
   useEffect(() => {
-    fetch(`/api/appointments/occupied?fecha=${fechaISO(fecha)}`)
+    fetch(`/api/appointments?action=occupied&fecha=${fechaISO(fecha)}`)
       .then((r) => r.json())
       .then((data) => {
         setHorasOcupadas(data.horasOcupadas ?? []);

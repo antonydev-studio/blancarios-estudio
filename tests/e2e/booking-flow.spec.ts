@@ -76,7 +76,7 @@ test.describe("Booking Flow — Step 2: Date and Time Selection", () => {
 
   test("clicking a future date triggers occupied-slots API call", async ({ bookingPage: page }) => {
     const [response] = await Promise.all([
-      page.waitForResponse((r) => r.url().includes("/api/appointments/occupied"), { timeout: 15_000 }),
+      page.waitForResponse((r) => r.url().includes("/api/appointments") && r.url().includes("action=occupied"), { timeout: 15_000 }),
       selectFirstAvailableDate(page),
     ]);
     expect(response.status()).toBe(200);

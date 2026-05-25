@@ -62,7 +62,7 @@ export default function HistorialCitasPage({ onVolverInicio, onAgendar, onLogout
     }
     setEnviando(true);
     try {
-      const res = await fetch(`/api/appointments/mias/${cita._id}`, {
+      const res = await fetch(`/api/appointments?miasId=${encodeURIComponent(cita._id)}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
         body: JSON.stringify({ estado: "cancelada" }),
