@@ -37,6 +37,7 @@ blob-report/
 
 # AI tooling — internal, never for public repo
 .claude/
+.Codex/napkin.md
 .agents/
 .skills/
 CLAUDE.md

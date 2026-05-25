@@ -247,14 +247,18 @@ export async function getMisAppointments(req, res) {
 // ── GET /api/appointments/occupied?fecha=YYYY-MM-DD — público ────────────────
 export async function getOccupiedSlots(req, res) {
   try {
-    const { fecha } = req.query;
+    const { fecha, excludeId } = req.query;
     if (!fecha) {
       return res.status(400).json({ mensaje: "El parámetro fecha es requerido." });
     }
-    const citas = await Appointment.find({
+    const filtro = {
       fecha,
       estado: { $nin: ["cancelada"] },
-    }).select("hora duracion");
+    };
+    if (excludeId && mongoose.Types.ObjectId.isValid(excludeId)) {
+      filtro._id = { $ne: excludeId };
+    }
+    const citas = await Appointment.find(filtro).select("hora duracion");
     const horasOcupadas = citas.map((c) => c.hora);
     res.json({
       horasOcupadas,
@@ -386,17 +390,21 @@ export async function patchClienteAppointment(req, res) {
           mensaje: "Ya no es posible cancelar esta cita en línea. Contacta directamente a Blanca Ríos Estudio.",
         });
       }
-      cita.estado = "cancelada";
-      if (reagendada) cita.reagendada = true;
-      if (notasAdmin) cita.notasAdmin = notasAdmin;
-      await cita.save();
+      const patch = { estado: "cancelada" };
+      if (reagendada) patch.reagendada = true;
+      if (notasAdmin) patch.notasAdmin = notasAdmin;
+      const citaActualizada = await Appointment.findByIdAndUpdate(
+        cita._id,
+        { $set: patch },
+        { new: true }
+      );
       await eliminarMovimientoCita(cita._id).catch((err) =>
         console.error("Error eliminando movimiento automático:", err.message)
       );
-      enviarNotificacionCancelacion(cita).catch((err) =>
+      enviarNotificacionCancelacion(citaActualizada).catch((err) =>
         console.error("Error enviando notificación de cancelación:", err.message)
       );
-      return res.json({ appointment: cita });
+      return res.json({ appointment: citaActualizada });
     }
 
     // ── Reagendar ─────────────────────────────────────────────────────────────
@@ -459,18 +467,22 @@ export async function patchClienteAppointment(req, res) {
         return res.status(409).json({ mensaje: "Ese horario ya está ocupado. Elige otro." });
       }
 
-      cita.fecha      = fecha;
-      cita.hora       = hora;
-      cita.reagendada = true;
-      await cita.save();
-      enviarNotificacionReagendamiento(cita).catch((err) =>
+      const citaActualizada = await Appointment.findByIdAndUpdate(
+        cita._id,
+        { $set: { fecha, hora, reagendada: true } },
+        { new: true }
+      );
+      enviarNotificacionReagendamiento(citaActualizada).catch((err) =>
         console.error("Error enviando notificación de reagendamiento:", err.message)
       );
-      return res.json({ appointment: cita });
+      return res.json({ appointment: citaActualizada });
     }
 
     return res.status(400).json({ mensaje: "Operación no válida." });
   } catch (err) {
+    if (err.code === 11000) {
+      return res.status(409).json({ mensaje: "Ese horario ya está ocupado. Elige otro." });
+    }
     console.error("Error en patchClienteAppointment:", err);
     res.status(500).json({ mensaje: "Error interno del servidor." });
   }

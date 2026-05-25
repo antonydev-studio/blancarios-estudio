@@ -80,8 +80,10 @@ export default function AgendarCitaPage({ onVolverInicio, onLoginClick, onCitaCo
 
   useEffect(() => {
     const fechaStr = fechaISO(fechaSeleccionada);
+    const citaId = citaAReagendar?._id || citaAReagendar?.id;
+    const excludeParam = citaId ? `&excludeId=${encodeURIComponent(citaId)}` : "";
     setCargandoSlots(true);
-    fetch(`/api/appointments/occupied?fecha=${fechaStr}`)
+    fetch(`/api/appointments/occupied?fecha=${fechaStr}${excludeParam}`)
       .then((r) => r.json())
       .then((data) => {
         setHorasOcupadas(data.horasOcupadas ?? []);
@@ -89,7 +91,7 @@ export default function AgendarCitaPage({ onVolverInicio, onLoginClick, onCitaCo
       })
       .catch((err) => console.error("Error cargando horas ocupadas:", err))
       .finally(() => setCargandoSlots(false));
-  }, [fechaSeleccionada]);
+  }, [fechaSeleccionada, citaAReagendar]);
 
   // Pre-seleccionar servicios cuando se reagenda una cita existente
   useEffect(() => {
@@ -148,7 +150,7 @@ export default function AgendarCitaPage({ onVolverInicio, onLoginClick, onCitaCo
           setError(data.mensaje || "No se pudo reagendar la cita.");
           return;
         }
-        recargarCitas();
+        await recargarCitas();
         onCitaConfirmada?.({
           servicios:       citaAReagendar.servicios,
           fecha:           fechaISO(fechaSeleccionada),
@@ -227,6 +229,7 @@ export default function AgendarCitaPage({ onVolverInicio, onLoginClick, onCitaCo
         setError(data.mensaje || "No se pudo agendar la cita.");
         return;
       }
+      if (usuario) await recargarCitas();
       onCitaConfirmada?.(payload);
     } catch (err) {
       console.error(err);
