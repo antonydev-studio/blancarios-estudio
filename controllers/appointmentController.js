@@ -317,7 +317,9 @@ export async function updateAppointment(req, res) {
       return res.status(404).json({ mensaje: "Cita no encontrada." });
     }
 
-    // If admin changes fecha or hora, verify no conflict with existing bookings
+    // If admin changes fecha or hora, verify horario/bloqueos y conflicto con otras citas
+    // (mismas reglas que createAppointment/patchClienteAppointment — un reagendado desde
+    // el panel nunca debe poder aterrizar en una hora que la propia admin bloqueó).
     if (req.body.fecha !== undefined || req.body.hora !== undefined) {
       const nuevaFecha   = req.body.fecha    ?? anterior.fecha;
       const nuevaHora    = req.body.hora     ?? anterior.hora;
@@ -328,9 +330,26 @@ export async function updateAppointment(req, res) {
         Appointment.find({ fecha: nuevaFecha, estado: { $nin: ["cancelada"] } }).select("hora duracion _id"),
       ]);
 
+      const horario = horarioDelDia(cfg, nuevaFecha);
+      if (!horario) {
+        return res.status(400).json({ mensaje: "El negocio está cerrado ese día." });
+      }
+
+      const horasBloqueadas = cfg?.horasBloqueadasPorDia?.[nuevaFecha] ?? [];
+      if (horasBloqueadas.includes(nuevaHora)) {
+        return res.status(400).json({ mensaje: "Este horario no está disponible." });
+      }
+
       const bufferMin  = cfg?.bufferMinutos ?? 0;
       const nuevaInicio = horaAMinutos(nuevaHora);
       const nuevaFin    = nuevaInicio + nuevaDuracion;
+
+      if (nuevaInicio < horario.inicioMin) {
+        return res.status(400).json({ mensaje: "La cita es antes del horario de apertura." });
+      }
+      if (nuevaFin > horario.finMin) {
+        return res.status(400).json({ mensaje: "La cita excede el horario de cierre." });
+      }
 
       if (hayConflicto(citasDelDia, nuevaInicio, nuevaFin, bufferMin, req.params.id)) {
         return res.status(409).json({ mensaje: "Ese horario ya está ocupado. Elige otro." });

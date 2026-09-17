@@ -114,9 +114,11 @@ export default function AppointmentDrawer({
       setCitas((prev) =>
         prev.map((x) => (x.id === cita.id ? { ...x, ...patch } : x))
       );
+      return true;
     } catch (err) {
       console.error("Error al actualizar cita:", err);
       mostrarToastError("No se pudo actualizar la cita. Intenta de nuevo.");
+      return false;
     }
   };
 
@@ -177,6 +179,7 @@ export default function AppointmentDrawer({
       }
     }
 
+    const idsAnteriores = serviciosSel;
     if (!estaSeleccionado) duracionPendienteRef.current = nuevaDuracion;
     setServiciosSel(nextIds);
     // No persistir selección vacía — el admin debe elegir un nuevo servicio primero
@@ -188,6 +191,13 @@ export default function AppointmentDrawer({
         (acc, s) => acc + (s.oferta && s.precioOferta != null ? s.precioOferta : s.precio),
         0
       ),
+    }).then((ok) => {
+      // Si el PATCH falla, revertimos el checkbox — si no, quedaría mostrando
+      // una selección que nunca se guardó (precio/duración abajo no cuadrarían).
+      if (!ok) {
+        setServiciosSel(idsAnteriores);
+        duracionPendienteRef.current = null;
+      }
     });
   };
 
