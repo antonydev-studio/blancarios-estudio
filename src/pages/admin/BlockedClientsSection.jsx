@@ -31,13 +31,14 @@ const BanIcon = () => (
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function BlockedClientsSection() {
-  const { getToken } = useAuth();
-  const api = useMemo(() => createAdminApi(getToken), [getToken]);
+  const { getToken, logout } = useAuth();
+  const api = useMemo(() => createAdminApi(getToken, logout), [getToken, logout]);
 
   const [bloqueados, setBloqueados] = useState([]);
   const [telefono, setTelefono] = useState("");
   const [motivo, setMotivo]   = useState("");
   const [errorForm, setErrorForm] = useState("");
+  const [errorAccion, setErrorAccion] = useState("");
   const [guardando, setGuardando] = useState(false);
 
   useEffect(() => {
@@ -50,6 +51,7 @@ export default function BlockedClientsSection() {
       setBloqueados(data.data ?? []);
     } catch (err) {
       console.error("Error al cargar clientes bloqueados:", err.message);
+      setErrorAccion("No se pudo cargar la lista de bloqueados.");
     }
   }
 
@@ -75,6 +77,7 @@ export default function BlockedClientsSection() {
   }
 
   async function handleToggle(id) {
+    setErrorAccion("");
     try {
       const data = await api.toggleBlockedClient(id);
       setBloqueados((prev) =>
@@ -82,15 +85,18 @@ export default function BlockedClientsSection() {
       );
     } catch (err) {
       console.error("Error al cambiar estado:", err.message);
+      setErrorAccion("No se pudo cambiar el estado. Intenta de nuevo.");
     }
   }
 
   async function handleEliminar(id) {
+    setErrorAccion("");
     try {
       await api.deleteBlockedClient(id);
       setBloqueados((prev) => prev.filter((b) => b._id !== id));
     } catch (err) {
       console.error("Error al eliminar bloqueo:", err.message);
+      setErrorAccion("No se pudo eliminar el bloqueo. Intenta de nuevo.");
     }
   }
 
@@ -101,6 +107,19 @@ export default function BlockedClientsSection() {
         title="Bloqueados"
         subtitle="Números que no podrán agendar citas en línea."
       />
+
+      {errorAccion && (
+        <div className="mb-6 rounded-2xl border border-estado-cancelada/40 bg-estado-cancelada/10 px-4 py-3 flex items-center justify-between gap-3">
+          <p className="text-sm text-estado-cancelada">{errorAccion}</p>
+          <button
+            type="button"
+            onClick={() => setErrorAccion("")}
+            className="text-estado-cancelada/60 hover:text-estado-cancelada text-lg leading-none"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {/* ── Formulario de bloqueo ── */}
       <form onSubmit={handleAgregar} noValidate>

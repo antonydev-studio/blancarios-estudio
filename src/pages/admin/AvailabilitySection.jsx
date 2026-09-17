@@ -136,15 +136,24 @@ export default function AvailabilitySection({
   // para que nunca quede un bloqueo "en rojo" en pantalla que no se guardó en BD.
   const [errorGuardado, setErrorGuardado] = useState("");
 
-  function guardarConfig(patch, rollback) {
+  function guardarConfig(patch, rollback, onSuccessExtra) {
     setErrorGuardado("");
-    api.updateConfig(patch).catch((err) => {
-      console.error("Error guardando configuración:", err);
-      rollback();
-      setErrorGuardado(
-        "No se pudo guardar el cambio. Intenta de nuevo — " + (err.message || "error de conexión")
-      );
-    });
+    api.updateConfig(patch)
+      .then((data) => {
+        // Fuente de verdad = lo que el servidor confirma que quedó guardado,
+        // no el parche local optimista (cubre carreras entre pestañas/ediciones).
+        if (data?.config) {
+          setConfig((c) => ({ ...c, ...data.config }));
+          onSuccessExtra?.(data.config);
+        }
+      })
+      .catch((err) => {
+        console.error("Error guardando configuración:", err);
+        rollback();
+        setErrorGuardado(
+          "No se pudo guardar el cambio. Intenta de nuevo — " + (err.message || "error de conexión")
+        );
+      });
   }
 
   // ── Estado local ──────────────────────────────────────────────────────────
@@ -279,7 +288,8 @@ export default function AvailabilitySection({
       setDiasBloqueados(newDias);
       guardarConfig(
         { diasBloqueados: newDias },
-        () => setDiasBloqueados(diasAnteriores)
+        () => setDiasBloqueados(diasAnteriores),
+        (serverConfig) => setDiasBloqueados(serverConfig.diasBloqueados ?? newDias)
       );
     }
   };

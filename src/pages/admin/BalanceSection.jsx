@@ -36,8 +36,8 @@ const PERIODOS = [
 // ── Componente ────────────────────────────────────────────────────────────────
 
 export default function BalanceSection({ citas, movimientos, setMovimientos }) {
-  const { getToken } = useAuth();
-  const api = useMemo(() => createAdminApi(getToken), [getToken]);
+  const { getToken, logout } = useAuth();
+  const api = useMemo(() => createAdminApi(getToken, logout), [getToken, logout]);
 
   const [periodo, setPeriodo] = useState("hoy");
 

@@ -17,8 +17,8 @@ export default function ClientDrawer({
   setClientes,
   setCitas,
 }) {
-  const { getToken } = useAuth();
-  const api = React.useMemo(() => createAdminApi(getToken), [getToken]);
+  const { getToken, logout } = useAuth();
+  const api = React.useMemo(() => createAdminApi(getToken, logout), [getToken, logout]);
 
   const cliente = clientes?.find((x) => x.id === clienteId) ?? null;
 
@@ -95,10 +95,17 @@ export default function ClientDrawer({
   };
 
   const persistirCliente = (patch) => {
+    // Snapshot previo — si el PATCH falla, revertimos para que la UI (ej. el
+    // toggle de lista negra) nunca muestre un estado que no quedó en BD.
+    const anterior = { notas: cliente.notas ?? "", listaNegraActiva: !!cliente.listaNegraActiva };
     actualizar(patch);
-    const notas           = patch.notas           ?? cliente.notas           ?? "";
-    const listaNegraActiva = patch.listaNegraActiva ?? !!cliente.listaNegraActiva;
-    api.updateClient(cliente.id, { notas, listaNegraActiva }).catch(console.error);
+    const notas            = patch.notas            ?? anterior.notas;
+    const listaNegraActiva = patch.listaNegraActiva ?? anterior.listaNegraActiva;
+    api.updateClient(cliente.id, { notas, listaNegraActiva }).catch((err) => {
+      console.error("Error al guardar cliente:", err);
+      actualizar(anterior);
+      setErrorMsg(err.message || "No se pudo guardar el cambio. Intenta de nuevo.");
+    });
   };
 
   return (
@@ -135,7 +142,10 @@ export default function ClientDrawer({
               api.updateClient(cliente.id, {
                 notas: cliente.notas ?? "",
                 listaNegraActiva: !!cliente.listaNegraActiva,
-              }).catch(console.error)
+              }).catch((err) => {
+                console.error("Error al guardar notas:", err);
+                setErrorMsg("No se pudo guardar la nota. Toca fuera del campo para reintentar.");
+              })
             }
           />
         </div>

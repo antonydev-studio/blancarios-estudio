@@ -327,8 +327,8 @@ function RazonesEditor({ config, api, setConfig, onToast }) {
 
 // ── Componente principal ──────────────────────────────────────────────────────
 export default function HomepageSection({ config, setConfig }) {
-  const { getToken } = useAuth();
-  const api = React.useMemo(() => createAdminApi(getToken), [getToken]);
+  const { getToken, logout } = useAuth();
+  const api = React.useMemo(() => createAdminApi(getToken, logout), [getToken, logout]);
   const [toastMsg, setToastMsg] = useState("");
 
   const onToast = useCallback((msg) => {

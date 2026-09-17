@@ -14,8 +14,8 @@ import ServiceFormDrawer from "../../components/admin/ServiceFormDrawer";
 import Toast from "../../components/ui/Toast";
 
 export default function CatalogSection({ servicios, setServicios }) {
-  const { getToken } = useAuth();
-  const api = React.useMemo(() => createAdminApi(getToken), [getToken]);
+  const { getToken, logout } = useAuth();
+  const api = React.useMemo(() => createAdminApi(getToken, logout), [getToken, logout]);
 
   const [drawerAbierto, setDrawerAbierto] = useState(false);
   const [borrador, setBorrador] = useState(null);
