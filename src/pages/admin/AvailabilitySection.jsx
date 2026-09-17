@@ -125,11 +125,27 @@ export default function AvailabilitySection({
   config,
   setConfig,
 }) {
-  const { getToken } = useAuth();
-  const api = React.useMemo(() => createAdminApi(getToken), [getToken]);
+  const { getToken, logout } = useAuth();
+  const api = React.useMemo(() => createAdminApi(getToken, logout), [getToken, logout]);
   const { citas } = useAdminData();
 
   const hoy = useMemo(() => new Date(), []);
+
+  // ── Guardado con rollback ─────────────────────────────────────────────────
+  // Actualiza localmente (optimista) pero revierte y avisa si el PATCH falla,
+  // para que nunca quede un bloqueo "en rojo" en pantalla que no se guardó en BD.
+  const [errorGuardado, setErrorGuardado] = useState("");
+
+  function guardarConfig(patch, rollback) {
+    setErrorGuardado("");
+    api.updateConfig(patch).catch((err) => {
+      console.error("Error guardando configuración:", err);
+      rollback();
+      setErrorGuardado(
+        "No se pudo guardar el cambio. Intenta de nuevo — " + (err.message || "error de conexión")
+      );
+    });
+  }
 
   // ── Estado local ──────────────────────────────────────────────────────────
   const [mesActual, setMesActual] = useState(
@@ -245,23 +261,32 @@ export default function AvailabilitySection({
   const onToggleDiaCompleto = () => {
     if (esDiaCerradoPorSemana) {
       // Día de descanso: alternar excepción (abrirlo/cerrarlo como caso especial)
-      const excs = new Set(config.diasAbiertosExcepcion ?? []);
+      const excsAnteriores = config.diasAbiertosExcepcion ?? [];
+      const excs = new Set(excsAnteriores);
       excs.has(fechaSelStr) ? excs.delete(fechaSelStr) : excs.add(fechaSelStr);
       const newExcs = [...excs].sort();
       setConfig((c) => ({ ...c, diasAbiertosExcepcion: newExcs }));
-      api.updateConfig({ diasAbiertosExcepcion: newExcs }).catch(console.error);
+      guardarConfig(
+        { diasAbiertosExcepcion: newExcs },
+        () => setConfig((c) => ({ ...c, diasAbiertosExcepcion: excsAnteriores }))
+      );
     } else {
       // Día normal: alternar bloqueo explícito
+      const diasAnteriores = diasBloqueados;
       const newDias = diasBloqueados.includes(fechaSelStr)
         ? diasBloqueados.filter((x) => x !== fechaSelStr)
         : [...diasBloqueados, fechaSelStr].sort();
       setDiasBloqueados(newDias);
-      api.updateConfig({ diasBloqueados: newDias }).catch(console.error);
+      guardarConfig(
+        { diasBloqueados: newDias },
+        () => setDiasBloqueados(diasAnteriores)
+      );
     }
   };
 
   const onToggleHora = (hora) => {
-    const mapa = { ...(config.horasBloqueadasPorDia ?? {}) };
+    const mapaAnterior = config.horasBloqueadasPorDia ?? {};
+    const mapa = { ...mapaAnterior };
     const set  = new Set(mapa[fechaSelStr] ?? []);
     set.has(hora) ? set.delete(hora) : set.add(hora);
     if (set.size === 0) {
@@ -270,7 +295,10 @@ export default function AvailabilitySection({
       mapa[fechaSelStr] = [...set].sort();
     }
     setConfig((prev) => ({ ...prev, horasBloqueadasPorDia: mapa }));
-    api.updateConfig({ horasBloqueadasPorDia: mapa }).catch(console.error);
+    guardarConfig(
+      { horasBloqueadasPorDia: mapa },
+      () => setConfig((prev) => ({ ...prev, horasBloqueadasPorDia: mapaAnterior }))
+    );
   };
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -282,6 +310,19 @@ export default function AvailabilitySection({
         title="Disponibilidad"
         subtitle="Configura el descanso entre citas, horario de atención, días cerrados y bloqueos específicos."
       />
+
+      {errorGuardado && (
+        <div className="rounded-2xl border border-estado-cancelada/40 bg-estado-cancelada/10 px-4 py-3 flex items-center justify-between gap-3">
+          <p className="text-sm text-estado-cancelada">{errorGuardado}</p>
+          <button
+            type="button"
+            onClick={() => setErrorGuardado("")}
+            className="text-estado-cancelada/60 hover:text-estado-cancelada text-lg leading-none"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {/* ── Bloque 1: Configuración rápida ──────────────────────────────── */}
       <div className="card p-5 sm:p-6 space-y-6">
@@ -299,8 +340,12 @@ export default function AvailabilitySection({
             value={config.bufferMinutos ?? 0}
             opciones={OPCIONES_DESCANSO}
             onChange={(val) => {
+              const anterior = config.bufferMinutos;
               setConfig((c) => ({ ...c, bufferMinutos: val }));
-              api.updateConfig({ bufferMinutos: val }).catch(console.error);
+              guardarConfig(
+                { bufferMinutos: val },
+                () => setConfig((c) => ({ ...c, bufferMinutos: anterior }))
+              );
             }}
           />
         </div>
@@ -318,23 +363,30 @@ export default function AvailabilitySection({
               const fin       = diaConfig.fin      ?? 21;
 
               const setDia = (patch) => {
+                const horarioAnterior     = config.horarioPorDia;
+                const diasCerradosAnterior = config.diasCerrados ?? [];
                 const newDiaConfig = { ...diaConfig, ...patch };
                 const newDiasCerrados = (() => {
-                  const next = new Set(config.diasCerrados ?? []);
+                  const next = new Set(diasCerradosAnterior);
                   if (patch.cerrado !== undefined) {
                     patch.cerrado ? next.add(d) : next.delete(d);
                   }
                   return [...next].sort();
                 })();
+                const newHorarioPorDia = { ...config.horarioPorDia, [d]: newDiaConfig };
                 setConfig((c) => ({
                   ...c,
-                  horarioPorDia: { ...c.horarioPorDia, [d]: newDiaConfig },
+                  horarioPorDia: newHorarioPorDia,
                   diasCerrados: newDiasCerrados,
                 }));
-                api.updateConfig({
-                  horarioPorDia: { ...config.horarioPorDia, [d]: newDiaConfig },
-                  diasCerrados: newDiasCerrados,
-                }).catch(console.error);
+                guardarConfig(
+                  { horarioPorDia: newHorarioPorDia, diasCerrados: newDiasCerrados },
+                  () => setConfig((c) => ({
+                    ...c,
+                    horarioPorDia: horarioAnterior,
+                    diasCerrados: diasCerradosAnterior,
+                  }))
+                );
               };
 
               return (
