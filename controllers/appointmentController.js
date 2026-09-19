@@ -76,6 +76,26 @@ function hayConflicto(citasDelDia, nuevaInicio, nuevaFin, bufferMin, excluirId =
   });
 }
 
+// ── Helper: ¿el rango [nuevaInicio, nuevaFin) de la nueva cita choca con alguna
+// hora bloqueada por el admin? ────────────────────────────────────────────────
+// horasBloqueadasPorDia guarda cada slot bloqueado como un string de inicio
+// ("10:15 AM") que representa una franja de 15 minutos — el mismo ancho fijo
+// que generarSlots() usa en TODO el front (Config.intervalo existe en el
+// esquema pero nunca se usa como paso real; su comentario dice "siempre 15,
+// no configurable" — no leerlo evita tratar un valor viejo/no usado en la
+// BD como si fuera el ancho real). Antes solo se comparaba el string exacto
+// de la hora de INICIO de la nueva cita — así que una cita que empezaba en un
+// slot libre pero cuya duración se metía en un slot bloqueado más adelante
+// pasaba sin problema (el bug reportado: "duraba 30 min y solo había 15
+// disponibles" y aun así se dejó agendar). Ahora se compara el rango completo.
+const ANCHO_SLOT_MIN = 15;
+function hayBloqueoEnRango(horasBloqueadas, nuevaInicio, nuevaFin) {
+  return horasBloqueadas.some((h) => {
+    const inicioBloqueo = horaAMinutos(h);
+    return inicioBloqueo < nuevaFin && inicioBloqueo + ANCHO_SLOT_MIN > nuevaInicio;
+  });
+}
+
 // ── Helper: parsear "10:00 AM" + "2025-04-21" → Date en UTC ──────────────────
 // México City es UTC-6 permanente desde 2023 (sin horario de verano).
 const OFFSET_MEXICO_MS = 6 * 60 * 60 * 1000;
@@ -123,12 +143,6 @@ export async function createAppointment(req, res) {
       return res.status(400).json({ mensaje: "El negocio está cerrado ese día." });
     }
 
-    // Verificar hora específica no bloqueada por el admin
-    const horasBloqueadas = cfg?.horasBloqueadasPorDia?.[fecha] ?? [];
-    if (horasBloqueadas.includes(hora)) {
-      return res.status(400).json({ mensaje: "Este horario no está disponible." });
-    }
-
     // Verificar dentro del horario de operación
     const nuevaInicio = horaAMinutos(hora);
     const nuevaFin    = nuevaInicio + duracion;
@@ -137,6 +151,12 @@ export async function createAppointment(req, res) {
     }
     if (nuevaFin > horario.finMin) {
       return res.status(400).json({ mensaje: "La cita excede el horario de cierre." });
+    }
+
+    // Verificar que la duración completa no se meta en una hora bloqueada por el admin
+    const horasBloqueadas = cfg?.horasBloqueadasPorDia?.[fecha] ?? [];
+    if (hayBloqueoEnRango(horasBloqueadas, nuevaInicio, nuevaFin)) {
+      return res.status(400).json({ mensaje: "Este horario no está disponible." });
     }
 
     // Verificar solapamiento incluyendo buffer de descanso entre citas
@@ -335,14 +355,14 @@ export async function updateAppointment(req, res) {
         return res.status(400).json({ mensaje: "El negocio está cerrado ese día." });
       }
 
-      const horasBloqueadas = cfg?.horasBloqueadasPorDia?.[nuevaFecha] ?? [];
-      if (horasBloqueadas.includes(nuevaHora)) {
-        return res.status(400).json({ mensaje: "Este horario no está disponible." });
-      }
-
       const bufferMin  = cfg?.bufferMinutos ?? 0;
       const nuevaInicio = horaAMinutos(nuevaHora);
       const nuevaFin    = nuevaInicio + nuevaDuracion;
+
+      const horasBloqueadas = cfg?.horasBloqueadasPorDia?.[nuevaFecha] ?? [];
+      if (hayBloqueoEnRango(horasBloqueadas, nuevaInicio, nuevaFin)) {
+        return res.status(400).json({ mensaje: "Este horario no está disponible." });
+      }
 
       if (nuevaInicio < horario.inicioMin) {
         return res.status(400).json({ mensaje: "La cita es antes del horario de apertura." });
@@ -462,11 +482,6 @@ export async function patchClienteAppointment(req, res) {
         return res.status(400).json({ mensaje: "El negocio está cerrado ese día." });
       }
 
-      const horasBloqueadasReag = cfgReag?.horasBloqueadasPorDia?.[fecha] ?? [];
-      if (horasBloqueadasReag.includes(hora)) {
-        return res.status(400).json({ mensaje: "Este horario no está disponible." });
-      }
-
       const nuevaInicio = horaAMinutos(hora);
       const nuevaFin    = nuevaInicio + (cita.duracion || 0);
       if (nuevaInicio < horReag.inicioMin) {
@@ -474,6 +489,11 @@ export async function patchClienteAppointment(req, res) {
       }
       if (nuevaFin > horReag.finMin) {
         return res.status(400).json({ mensaje: "La cita excede el horario de cierre." });
+      }
+
+      const horasBloqueadasReag = cfgReag?.horasBloqueadasPorDia?.[fecha] ?? [];
+      if (hayBloqueoEnRango(horasBloqueadasReag, nuevaInicio, nuevaFin)) {
+        return res.status(400).json({ mensaje: "Este horario no está disponible." });
       }
 
       const bufferMinReag = cfgReag?.bufferMinutos ?? 0;

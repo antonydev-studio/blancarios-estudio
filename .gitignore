@@ -35,6 +35,10 @@ playwright-report/
 playwright/.cache/
 blob-report/
 
+# Test hits production directly (creates real bookings/blocks a real hour,
+# needs real admin credentials via env vars) — keep local only, don't push.
+tests/validation/booking-block-enforcement.spec.ts
+
 # AI tooling — internal, never for public repo
 .claude/
 .Codex/napkin.md

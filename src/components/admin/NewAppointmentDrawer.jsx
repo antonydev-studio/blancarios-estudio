@@ -67,11 +67,15 @@ export default function NewAppointmentDrawer({
       .catch((err) => console.error("Error cargando horas ocupadas:", err));
   }, [fecha]);
 
-  const duracionConBuffer = useMemo(() => {
-    const activos  = servicios.filter((s) => serviciosSel.includes(s.id));
-    const duracion = activos.reduce((sum, s) => sum + s.duracion, 0);
-    return duracion > 0 ? duracion + (config.bufferMinutos ?? 0) : 0;
-  }, [servicios, serviciosSel, config.bufferMinutos]);
+  const totalDuracion = useMemo(() => {
+    const activos = servicios.filter((s) => serviciosSel.includes(s.id));
+    return activos.reduce((sum, s) => sum + s.duracion, 0);
+  }, [servicios, serviciosSel]);
+
+  const duracionConBuffer = useMemo(
+    () => (totalDuracion > 0 ? totalDuracion + (config.bufferMinutos ?? 0) : 0),
+    [totalDuracion, config.bufferMinutos]
+  );
 
   // Forward: bloquea slots dentro del rango [inicio, inicio+duracion+buffer) de cada cita existente
   const slotsOcupadosPorRango = useMemo(() => {
@@ -99,6 +103,26 @@ export default function NewAppointmentDrawer({
     }
     return set;
   }, [citasOcupadas, slots, duracionConBuffer]);
+
+  // Bloquea slots donde la duración del servicio se metería en una hora bloqueada
+  // por el admin más adelante (no solo el slot cuyo string coincide exacto).
+  // Ancho fijo del slot bloqueado — mismo valor que generarSlots() usa siempre
+  // (Config.intervalo existe pero no se lee en ningún otro lado del sistema).
+  const ANCHO_SLOT_MIN = 15;
+  const slotsChocanConBloqueo = useMemo(() => {
+    if (!totalDuracion || horasBloqueadas.length === 0) return new Set();
+    const set = new Set();
+    for (const slot of slots) {
+      const slotMin = horaAMinutos(slot);
+      const slotFin = slotMin + totalDuracion;
+      const choca = horasBloqueadas.some((h) => {
+        const bMin = horaAMinutos(h);
+        return bMin < slotFin && bMin + ANCHO_SLOT_MIN > slotMin;
+      });
+      if (choca) set.add(slot);
+    }
+    return set;
+  }, [horasBloqueadas, slots, totalDuracion]);
 
   const toggleServicio = (id) => {
     setServiciosSel((prev) =>
@@ -256,7 +280,7 @@ export default function NewAppointmentDrawer({
                 fecha.getDate()     === hoy.getDate();
               const ahoraMin = esHoy ? (new Date().getHours() * 60 + new Date().getMinutes()) : -1;
               const esPasado  = esHoy && horaAMinutos(h) <= ahoraMin;
-              const bloqueada = !esPasado && (horasBloqueadas.includes(h) || horasOcupadas.includes(h) || slotsOcupadosPorRango.has(h) || slotsConEmpalme.has(h));
+              const bloqueada = !esPasado && (horasBloqueadas.includes(h) || horasOcupadas.includes(h) || slotsOcupadosPorRango.has(h) || slotsConEmpalme.has(h) || slotsChocanConBloqueo.has(h));
               return (
                 <TimeChip
                   key={h}

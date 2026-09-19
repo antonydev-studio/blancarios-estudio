@@ -89,6 +89,26 @@ export default function AppointmentDrawer({
     return set;
   }, [citas, fechaRep, citaId, slots, duracionSel, config.bufferMinutos]);
 
+  // Bloquea slots donde la duración del servicio se metería en una hora
+  // bloqueada por el admin más adelante (no solo el slot cuyo string coincide).
+  // Ancho fijo del slot bloqueado — mismo valor que generarSlots() usa siempre
+  // (Config.intervalo existe pero no se lee en ningún otro lado del sistema).
+  const ANCHO_SLOT_MIN = 15;
+  const slotsChocanConBloqueo = useMemo(() => {
+    if (!duracionSel || horasBloqueadas.length === 0) return new Set();
+    const set = new Set();
+    for (const slot of slots) {
+      const slotMin = horaAMinutos(slot);
+      const slotFin = slotMin + duracionSel;
+      const choca = horasBloqueadas.some((h) => {
+        const bMin = horaAMinutos(h);
+        return bMin < slotFin && bMin + ANCHO_SLOT_MIN > slotMin;
+      });
+      if (choca) set.add(slot);
+    }
+    return set;
+  }, [horasBloqueadas, slots, duracionSel]);
+
   const [toastError, setToastError] = useState("");
 
   const mostrarToastError = (msg) => {
@@ -271,7 +291,7 @@ export default function AppointmentDrawer({
                   const mismoDia = fechaISO(fechaRep) === cita.fecha;
                   return slots.map((h) => {
                     const esHoraActual = mismoDia && h === cita.hora;
-                    const bloqueada    = !esHoraActual && (horasBloqueadas.includes(h) || horasOcupadasPorCita.has(h));
+                    const bloqueada    = !esHoraActual && (horasBloqueadas.includes(h) || horasOcupadasPorCita.has(h) || slotsChocanConBloqueo.has(h));
                     return (
                       <TimeChip
                         key={h}

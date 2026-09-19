@@ -276,9 +276,34 @@ export default function AgendarCitaPage({ onVolverInicio, onLoginClick, onCitaCo
     return set;
   }, [citasOcupadas, todosLosSlots, duracionConBuffer]);
 
+  // Slots donde la duración del servicio se metería en una hora bloqueada por el
+  // admin más adelante — antes solo se excluía el slot cuyo string coincidía
+  // exacto con una hora bloqueada, así que un servicio de 30 min que empezaba en
+  // un slot libre pero se metía 15 min en uno bloqueado sí se dejaba agendar.
+  // Ancho fijo del slot bloqueado — mismo valor que generarSlots() usa siempre
+  // (Config.intervalo existe pero no se lee en ningún otro lado del sistema).
+  const ANCHO_SLOT_MIN = 15;
+  const slotsChocanConBloqueo = useMemo(() => {
+    if (!totalDuracion || horasBloqueadas.length === 0) return new Set();
+    const set = new Set();
+    for (const slot of todosLosSlots) {
+      const slotMin = horaAMinutos(slot);
+      const slotFin = slotMin + totalDuracion;
+      const choca = horasBloqueadas.some((h) => {
+        const bMin = horaAMinutos(h);
+        return bMin < slotFin && bMin + ANCHO_SLOT_MIN > slotMin;
+      });
+      if (choca) set.add(slot);
+    }
+    return set;
+  }, [horasBloqueadas, todosLosSlots, totalDuracion]);
+
   const todasBloqueadas = useMemo(
-    () => [...new Set([...horasBloqueadas, ...horasOcupadas, ...slotsOcupadosPorRango, ...slotsConEmpalme])],
-    [horasBloqueadas, horasOcupadas, slotsOcupadosPorRango, slotsConEmpalme]
+    () => [...new Set([
+      ...horasBloqueadas, ...horasOcupadas,
+      ...slotsOcupadosPorRango, ...slotsConEmpalme, ...slotsChocanConBloqueo,
+    ])],
+    [horasBloqueadas, horasOcupadas, slotsOcupadosPorRango, slotsConEmpalme, slotsChocanConBloqueo]
   );
 
   const resumenListo =
