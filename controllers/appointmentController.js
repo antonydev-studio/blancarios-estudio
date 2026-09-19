@@ -337,10 +337,11 @@ export async function updateAppointment(req, res) {
       return res.status(404).json({ mensaje: "Cita no encontrada." });
     }
 
-    // If admin changes fecha or hora, verify horario/bloqueos y conflicto con otras citas
-    // (mismas reglas que createAppointment/patchClienteAppointment — un reagendado desde
-    // el panel nunca debe poder aterrizar en una hora que la propia admin bloqueó).
-    if (req.body.fecha !== undefined || req.body.hora !== undefined) {
+    // Si cambia fecha, hora O duracion, verificar horario/bloqueos y conflicto con otras
+    // citas (mismas reglas que createAppointment/patchClienteAppointment). Un cambio de
+    // duracion SIN tocar fecha/hora puede igual meter la cita en una hora bloqueada o en
+    // la siguiente cita — no solo un reagendado explícito necesita revalidarse.
+    if (req.body.fecha !== undefined || req.body.hora !== undefined || req.body.duracion !== undefined) {
       const nuevaFecha   = req.body.fecha    ?? anterior.fecha;
       const nuevaHora    = req.body.hora     ?? anterior.hora;
       const nuevaDuracion = req.body.duracion ?? anterior.duracion ?? 0;

@@ -197,6 +197,21 @@ export default function AppointmentDrawer({
         mostrarToastError("Este servicio no cabe en el horario actual. Reprograma la cita primero.");
         return;
       }
+
+      // Check 3 — la duración extendida no se debe meter en una hora bloqueada por el admin.
+      // Usa horasBloqueadasPorDia[cita.fecha] directo (no el memo `horasBloqueadas`, que
+      // está escaneado a fechaRep — la fecha del selector de reprogramar, no la de esta
+      // cita — para no depender de esa fecha mientras el admin no haya tocado el calendario).
+      const nuevaFinActual = inicioActual + nuevaDuracion;
+      const horasBloqueadasCitaActual = config.horasBloqueadasPorDia?.[cita.fecha] ?? [];
+      const bloqueaExtension = horasBloqueadasCitaActual.some((h) => {
+        const bMin = horaAMinutos(h);
+        return bMin < nuevaFinActual && bMin + 15 > inicioActual;
+      });
+      if (bloqueaExtension) {
+        mostrarToastError("Este servicio no cabe — se mete en una hora bloqueada. Reprograma la cita primero.");
+        return;
+      }
     }
 
     const idsAnteriores = serviciosSel;
